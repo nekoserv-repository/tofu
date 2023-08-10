@@ -14,4 +14,5 @@ How to use :
 - update vault : ansible-vault edit secrets.enc
 
 - run examples :
+  - terraform init
   - ansible-playbook -e @secrets.enc --ask-vault-pass ansible.yaml
