@@ -1,4 +1,4 @@
-![terraform](https://repository-images.githubusercontent.com/676958218/4bd582ad-9a7a-49fb-bfcd-d1b3c3a9481a)
+![terraform](https://repository-images.githubusercontent.com/676958218/b4491821-1215-441b-8694-94712203ef7b)
 
 <br />
 
