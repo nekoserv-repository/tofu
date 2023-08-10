@@ -1,0 +1,57 @@
+{{ ansible_managed | comment }}
+
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false
+
+log:
+  filePath: /var/log/traefik/traefik.log
+  level: ERROR
+
+accessLog:
+  filePath: /var/log/traefik/access.log
+
+entryPoints:
+  https:
+    address: ":{{ dst_port }}"
+
+## providers
+providers:
+  file:
+    directory: "/etc/traefik"
+    watch: true
+
+api:
+  insecure: false
+  dashboard: false
+
+pilot:
+  dashboard: false
+
+ping: {}
+
+http:
+  routers:
+    ha-router:
+      rule: "Host(`{{ host }}`) && PathPrefix(`/`)"
+      service: "ha-svc"
+      entryPoints:
+        - "https"
+      tls:
+        certResolver: default-ssl
+
+  services:
+    ha-svc:
+      loadBalancer:
+        servers:
+          - url: "{{ dest_host }}"
+
+## https mode : let's encrypt
+certificatesResolvers:
+  default-ssl:
+    acme:
+      email: "contact@domain.com"
+      storage: "{{ acme_storage }}"
+      dnsChallenge:
+        provider: {{ dns_challenge_provider }}
+        delayBeforeCheck: 10
