@@ -107,3 +107,6 @@
 
     - name: starting traefik
       ansible.builtin.raw: rc-service traefik restart
+
+    - name: traefik on default runlevel
+      ansible.builtin.raw: rc-update add traefik default
