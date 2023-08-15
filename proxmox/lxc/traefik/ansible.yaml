@@ -105,7 +105,7 @@
     - name: update traefik permissions
       ansible.builtin.raw: chmod 0600 /etc/conf.d/traefik
 
-    - name: starting traefik
+    - name: restarting traefik
       ansible.builtin.raw: rc-service traefik restart
 
     - name: traefik on default runlevel
