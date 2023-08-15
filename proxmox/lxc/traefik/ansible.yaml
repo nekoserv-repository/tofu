@@ -55,6 +55,12 @@
       ansible.builtin.raw: ssh-keyscan -H {{ inventory_hostname }} >> ~/.ssh/known_hosts
       delegate_to: localhost
 
+    - name: disable SSH password authentication
+      ansible.builtin.raw: sed -i -e 's/^#PasswordAuthentication.*/PasswordAuthentication no/g' /etc/ssh/sshd_config
+
+    - name: restarting OpenSSH
+      ansible.builtin.raw: rc-service sshd restart
+
     - name: update index of available package(s)
       ansible.builtin.raw: apk update
 
