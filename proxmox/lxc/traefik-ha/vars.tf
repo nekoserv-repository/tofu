@@ -1,5 +1,5 @@
 variable "hostname" {
-  default = "traefik-terraform"
+  default = "traefik-ha"
 }
 variable "cores" {
    default = "1"
