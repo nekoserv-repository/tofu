@@ -5,7 +5,7 @@ variable "cores" {
    default = "1"
 }
 variable "memory" {
-   default = "256"
+   default = "128"
 }
 variable "disk" {
    default = "512M"
