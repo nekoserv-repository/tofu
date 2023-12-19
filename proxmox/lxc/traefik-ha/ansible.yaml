@@ -52,7 +52,7 @@
       changed_when: "'not found in' not in key_removal.stderr"
 
     - name: allow new SSH key
-      ansible.builtin.raw: ssh-keyscan -H {{ inventory_hostname }} >> ~/.ssh/known_hosts
+      ansible.builtin.raw: ssh-keyscan -H {{ inventory_hostname }} | grep ed25519 >> ~/.ssh/known_hosts
       delegate_to: localhost
 
     - name: disable SSH password authentication
