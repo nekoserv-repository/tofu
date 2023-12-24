@@ -1,0 +1,149 @@
+---
+- name: bootstrap to {{ my_host }}
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: add target host
+      ansible.builtin.add_host:
+        hostname: "{{ my_host }}"
+        ansible_ssh_host: "{{ my_host }}"
+
+- name: vm provisioning
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: generate tfvars
+      ansible.builtin.raw: echo "{{ tf_vars }}" > terraform.tfvars
+      delegate_to: localhost
+
+    - name: terraform plan
+      ansible.builtin.raw: terraform plan -out 'plan'
+      delegate_to: localhost
+      register: terraform_plan
+      changed_when: "'no changes' not in terraform_plan.stdout"
+
+    - name: terraform apply plan
+      ansible.builtin.raw: terraform apply plan
+      delegate_to: localhost
+      register: terraform_apply
+      changed_when: "'1 added' in terraform_apply.stdout"
+
+    - name: remove tfvars
+      ansible.builtin.raw: rm -f terraform.tfvars
+      delegate_to: localhost
+
+    - name: waiting for {{ inventory_hostname }} to be ready
+      wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 22
+        state: started
+        delay: 5
+        timeout: 60
+      delegate_to: localhost
+
+    - name: remove previous SSH key
+      ansible.builtin.raw: ssh-keygen -f ~/.ssh/known_hosts -R {{ inventory_hostname }}
+      delegate_to: localhost
+      register: key_removal
+      changed_when: "'not found in' not in key_removal.stderr"
+
+    - name: allow new SSH key
+      ansible.builtin.raw: ssh-keyscan -H {{ inventory_hostname }} | grep ed25519 >> ~/.ssh/known_hosts
+      delegate_to: localhost
+
+    - name: root operations
+      become: true
+      block:
+        - name: disable SSH password authentication
+          ansible.builtin.raw: sed -i -e 's/^#PasswordAuthentication.*/PasswordAuthentication no/g' /etc/ssh/sshd_config
+
+        - name: restarting OpenSSH
+          ansible.builtin.raw: systemctl restart ssh.service
+
+        - name: update index of available package(s)
+          ansible.builtin.raw: apt-get update
+
+        - name: check package(s) upgrade(s)
+          ansible.builtin.raw: apt-get -s upgrade | grep '^Inst ' | cat
+          changed_when: upd_output.stdout.splitlines()|length > 0
+          register: upd_output
+
+        - name: check dist-upgrade(s)
+          ansible.builtin.raw: apt-get -s dist-upgrade | grep '^Inst ' | cat
+          changed_when: upgd_output.stdout.splitlines()|length > 0
+          register: upgd_output
+
+        - name: package(s) to be updated
+          ansible.builtin.debug:
+            msg: "{{ upd_output.stdout_lines }}"
+          changed_when: false
+          when: upd_output.stdout.splitlines()|length > 0
+
+        - name: package(s) to be upgraded
+          ansible.builtin.debug:
+            msg: "{{ upgd_output.stdout_lines }}"
+          changed_when: false
+          when: upgd_output.stdout.splitlines()|length > 0
+
+        - name: upgrading
+          ansible.builtin.raw: apt upgrade
+          when: (upd_output.stdout.splitlines()|length > 0) or
+                (upgd_output.stdout.splitlines()|length > 0)
+
+        - name: reboot check for apps
+          ansible.builtin.raw: lsof / 2>&1 | awk '$10=="(deleted)"' | cat
+          changed_when: false
+          register: lsof_output
+
+        - name: reboot check for new kernel
+          ansible.builtin.raw: readlink /vmlinuz | awk '!/'"$(uname -r)"'/'
+          changed_when: false
+          register: kernel_output
+
+        - name: reboot check for initrd update
+          ansible.builtin.raw: find /boot/initrd* -mmin -2
+          changed_when: false
+          register: initrd_output
+
+        - name: rebooting {{ inventory_hostname }}
+          ansible.builtin.raw: reboot
+          poll: 0
+          ignore_errors: yes
+          when: (lsof_output.stdout.splitlines()|length > 0) or
+                (kernel_output.stdout.splitlines()|length > 0) or
+                (initrd_output.stdout.splitlines()|length > 0)
+
+        - name: waiting for {{ inventory_hostname }} to be ready
+          wait_for:
+            host: "{{ inventory_hostname }}"
+            port: 22
+            state: started
+            delay: 5
+            timeout: 60
+          delegate_to: localhost
+          become: false
+          when: (lsof_output.stdout.splitlines()|length > 0) or
+                (kernel_output.stdout.splitlines()|length > 0) or
+                (initrd_output.stdout.splitlines()|length > 0)
+
+        - name: install some tools
+          ansible.builtin.raw: apt install -y --no-install-recommends htop
+
+        - name: install docker
+          ansible.builtin.raw: apt install -y --no-install-recommends docker.io
+
+        - name: install docker-compose
+          ansible.builtin.raw: apt install -y --no-install-recommends docker-compose
+
+#        - name: move docker files
+#          ansible.builtin.raw: |
+#            echo '{\n  "data-root": "/home/var-lib-docker"\n}' > /etc/docker/daemon.json;
+#            mkdir /home/var-lib-docker;
+#            chmod 0710 /home/var-lib-docker;
+#            cp -rp /var/lib/docker/* /home/var-lib-docker/;
+#            rm -rf /var/lib/docker;
+
+        - name: restarting docker
+          ansible.builtin.raw: systemctl restart docker;
