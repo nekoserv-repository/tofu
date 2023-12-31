@@ -42,6 +42,8 @@ resource "proxmox_virtual_environment_vm" "alpine_vm" {
   name          = "alpine-vm"
   node_name     = var.proxmox_host
   vm_id         = count.index + 150
+  tablet_device = "false"
+  boot_order    = [ "scsi0" ]
 
   agent {
     enabled = false
