@@ -8,12 +8,16 @@ log:
   filePath: /var/log/traefik/traefik.log
   level: ERROR
 
+experimental:
+  http3: true
+
 accessLog:
   filePath: /var/log/traefik/access.log
 
 entryPoints:
   https:
     address: ":{{ dst_port }}"
+    http3: {}
 
 ## providers
 providers:
