@@ -1,0 +1,144 @@
+---
+- name: bootstrap to {{ my_host }}
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: add target host
+      ansible.builtin.add_host:
+        hostname: "{{ my_host }}"
+        ansible_ssh_host: "{{ my_host }}"
+
+- name: install-docker-registry
+  hosts: all
+  gather_facts: no
+  vars:
+    ansible_user: root
+
+  tasks:
+    - name: generate tfvars
+      ansible.builtin.raw: echo "{{ tf_vars }}" > terraform.tfvars
+      delegate_to: localhost
+
+    - name: terraform plan
+      ansible.builtin.raw: terraform plan -out 'plan'
+      delegate_to: localhost
+      register: terraform_plan
+      changed_when: "'no changes' not in terraform_plan.stdout"
+
+    - name: terraform apply plan
+      ansible.builtin.raw: terraform apply plan
+      delegate_to: localhost
+      register: terraform_apply
+      changed_when: "'1 added' in terraform_apply.stdout"
+
+    - name: remove tfvars
+      ansible.builtin.raw: rm -f terraform.tfvars
+      delegate_to: localhost
+
+    - name: waiting for {{ inventory_hostname }} to be ready
+      wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 22
+        state: started
+        delay: 5
+        timeout: 60
+      delegate_to: localhost
+
+    - name: remove previous SSH key
+      ansible.builtin.raw: ssh-keygen -f ~/.ssh/known_hosts -R {{ inventory_hostname }}
+      delegate_to: localhost
+      register: key_removal
+      changed_when: "'not found in' not in key_removal.stderr"
+
+    - name: allow new SSH key
+      ansible.builtin.raw: ssh-keyscan -H {{ inventory_hostname }} | grep ed25519 >> ~/.ssh/known_hosts
+      delegate_to: localhost
+
+    - name: disable SSH password authentication
+      ansible.builtin.raw: sed -i -e 's/^#PasswordAuthentication.*/PasswordAuthentication no/g' /etc/ssh/sshd_config
+
+    - name: restarting OpenSSH
+      ansible.builtin.raw: rc-service sshd restart
+
+    - name: update index of available package(s)
+      ansible.builtin.raw: apk update
+
+    - name: check package(s) update(s)
+      ansible.builtin.raw: apk version -l '<'
+      changed_when: pkgs_output.stdout.splitlines()|length > 1
+      failed_when: pkgs_output.stdout.splitlines()|length == 0
+      register: pkgs_output
+
+    - name: upgrading {{ pkgs_output.stdout.splitlines()|length - 1 }} package(s)
+      ansible.builtin.raw: apk upgrade
+      when: pkgs_output.stdout.splitlines()|length > 1
+
+    - name: check if reboot needed
+      ansible.builtin.raw: lsof / 2>&1 | awk '$3=="(deleted)"' | cat
+      register: lsof_output
+
+    - name: reboot
+      ansible.builtin.raw: reboot
+      poll: 0
+      ignore_errors: yes
+      when: lsof_output.stdout.splitlines()|length > 0
+
+    - name: waiting for {{ inventory_hostname }} to be ready
+      wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 22
+        state: started
+        delay: 5
+        timeout: 60
+      delegate_to: localhost
+      when: lsof_output.stdout.splitlines()|length > 0
+
+    - name: install apache2-utils
+      ansible.builtin.raw: apk add --no-cache apache2-utils
+
+    - name: install docker-registry
+      ansible.builtin.raw: apk add docker-registry
+
+    - name: enable delete storage
+      ansible.builtin.raw: sed -i -E '/^  delete\x3A$/,+2 s/(    enabled\x3A )(.*)/\1true/' /etc/docker-registry/config.yml
+
+    - name: configure docker-registry auth file
+      ansible.builtin.raw: sed -i -e 's/^\(    path\x3A\)\(.*\)/\1 \/etc\/docker-registry\/.htpasswd/g' /etc/docker-registry/config.yml
+
+#    - name: configure docker-registry auth file
+#      ansible.builtin.raw: sed -i -e 's/^\(    path\)\(.*\)/\1\2\/.htpasswd/' /etc/docker-registry/config.yml
+
+    - name: create auth file
+      ansible.builtin.raw: |
+        htpasswd -Bbn {{ registry_usr }} {{ registry_pwd }} > /etc/docker-registry/.htpasswd;
+        chmod 0600 /etc/docker-registry/.htpasswd;
+        chown docker-registry:docker-registry /etc/docker-registry/.htpasswd;
+
+    - name: remove apache2-utils
+      ansible.builtin.raw: apk del apache2-utils
+
+    - name: restarting registry
+      ansible.builtin.raw: rc-service docker-registry restart
+
+    - name: docker-registry on default runlevel
+      ansible.builtin.raw: rc-update add docker-registry default
+
+    - name: install curl and jq
+      ansible.builtin.raw: apk add --no-cache curl jq
+
+    - name: send docker-prune.sh
+      ansible.builtin.raw: scp docker-prune.sh {{ ansible_user }}@{{ inventory_hostname }}:/usr/local/bin/docker-prune.sh;
+      delegate_to: localhost
+      changed_when: false
+
+    - name: set creds for docker-prune.sh
+      ansible.builtin.raw: |
+        chmod 0700 /usr/local/bin/docker-prune.sh;
+        sed -i -e "s/REGISTRY_USR/{{ registry_usr }}/g" /usr/local/bin/docker-prune.sh;
+        sed -i -e "s/REGISTRY_PWD/{{ registry_pwd }}/g" /usr/local/bin/docker-prune.sh;
+
+    - name: enable periodic runs
+      ansible.builtin.raw: |
+        echo -e '#!/bin/sh\n/usr/local/bin/docker-prune.sh\ndocker-registry garbage-collect /etc/docker-registry/config.yml > /dev/null' > /etc/periodic/daily/docker-prune;
+        chmod 0755 /etc/periodic/daily/docker-prune;
