@@ -13,8 +13,8 @@ variable "nic_name" {
 variable "vlan_num" {
     default = "-1"
 }
-# proxmox api url
-variable "api_url" {
+# proxmox proxmox_ve
+variable "proxmox_ve" {
 }
 # proxmox user
 variable "api_user" {
@@ -30,4 +30,10 @@ variable "ip_addr" {
 }
 # gw
 variable "gw" {
+}
+# dns1
+variable "dns1" {
+}
+# dns2
+variable "dns2" {
 }

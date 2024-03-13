@@ -28,7 +28,7 @@
       ansible.builtin.raw: terraform apply plan
       delegate_to: localhost
       register: terraform_apply
-      changed_when: "'1 added' in terraform_apply.stdout"
+      changed_when: "'3 added' in terraform_apply.stdout"
 
     - name: remove tfvars
       ansible.builtin.raw: rm -f terraform.tfvars
@@ -61,6 +61,9 @@
 
         - name: restarting OpenSSH
           ansible.builtin.raw: systemctl restart ssh.service
+
+#        - name: set root SSH key
+#          ansible.builtin.raw: cp /home/alpine/.ssh/authorized_keys /root/.ssh/authorized_keys
 
         - name: update index of available package(s)
           ansible.builtin.raw: apt-get update
@@ -127,23 +130,3 @@
           when: (lsof_output.stdout.splitlines()|length > 0) or
                 (kernel_output.stdout.splitlines()|length > 0) or
                 (initrd_output.stdout.splitlines()|length > 0)
-
-        - name: install some tools
-          ansible.builtin.raw: apt install -y --no-install-recommends htop
-
-        - name: install docker
-          ansible.builtin.raw: apt install -y --no-install-recommends docker.io
-
-        - name: install docker-compose
-          ansible.builtin.raw: apt install -y --no-install-recommends docker-compose
-
-#        - name: move docker files
-#          ansible.builtin.raw: |
-#            echo '{\n  "data-root": "/home/var-lib-docker"\n}' > /etc/docker/daemon.json;
-#            mkdir /home/var-lib-docker;
-#            chmod 0710 /home/var-lib-docker;
-#            cp -rp /var/lib/docker/* /home/var-lib-docker/;
-#            rm -rf /var/lib/docker;
-
-        - name: restarting docker
-          ansible.builtin.raw: systemctl restart docker;
