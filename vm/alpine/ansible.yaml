@@ -1,5 +1,5 @@
 ---
-- name: bootstrap to {{ my_host }}
+- name: bootstrap to {{ ansible_user }}@{{ my_host }}
   hosts: localhost
   gather_facts: no
 
@@ -75,11 +75,58 @@
         - name: restarting OpenSSH
           ansible.builtin.raw: rc-service sshd restart
 
-#        - name: enable cgroups v2
-#          ansible.builtin.raw: sed -i -e 's/^#rc_cgroup_mode=.*/rc_cgroup_mode="unified"/g' /etc/rc.conf
-#
-#        - name: restart cgroups
-#          ansible.builtin.raw: service cgroups restart | cat
+        - name: unlock root account
+          ansible.builtin.raw: usermod -U root
+
+        - name: set root SSH key
+          ansible.builtin.raw: cp /home/alpine/.ssh/authorized_keys /root/.ssh/authorized_keys
+
+        - name: remove doas message
+          ansible.builtin.raw: sed -i -e '/doas/,+1d' /etc/motd
+
+        - name: remove doas
+          ansible.builtin.raw: apk del --purge doas
+
+
+- name: bootstrap to root@{{ my_host }}
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: add target host
+      ansible.builtin.add_host:
+        name: "{{ my_host }}"
+        hostname: "{{ my_host }}"
+        ansible_ssh_user: root
+        ansible_ssh_host: "{{ my_host }}"
+
+- name: serious business
+  hosts: "{{ my_host }}"
+  gather_facts: no
+  tasks:
+    - name: direct root operations
+      block:
+        - name: set username fact
+          set_fact:
+              username: root
+
+        - name: disable IPv6
+          ansible.builtin.raw: |
+            echo "net.ipv6.conf.all.disable_ipv6 = 1" >> /etc/sysctl.conf;
+            sysctl -p;
+
+        - name: cgroup stuff
+          block:
+            - name: enable cgroup v2 (unified)
+              ansible.builtin.raw: sed -i -e 's/^#rc_cgroup_mode=.*/rc_cgroup_mode="unified"/g' /etc/rc.conf
+
+            - name: enable cgroup controllers
+              ansible.builtin.raw: sed -i -e 's/^#rc_controller_cgroups=.*/rc_controller_cgroups="YES"/g' /etc/rc.conf
+
+            - name: add more cgroup controllers
+              ansible.builtin.raw: sed -i -e 's/^#rc_cgroup_controllers=.*/rc_cgroup_controllers="cpuset cpu io memory hugetlb pids"/g' /etc/rc.conf
+
+            - name: restart cgroups
+              ansible.builtin.raw: service cgroups restart | cat
 
         - name: update index of available package(s)
           ansible.builtin.raw: apk update
@@ -115,35 +162,66 @@
           become: false
           when: lsof_output.stdout.splitlines()|length > 0
 
-        - name: install some tools
-          ansible.builtin.raw: apk add --no-cache htop
+        - name: install tools
+          ansible.builtin.raw: apk add --no-cache curl file htop
 
-        - name: install docker
-          ansible.builtin.raw: apk add --no-cache docker
+        - name: k3s - install
+#        ## sqlite
+          ansible.builtin.raw: curl -sfL https://get.k3s.io | sh -
+#        ## etcd
+#          ansible.builtin.raw: curl -sfL https://get.k3s.io | sh -s - server --cluster-init
 
-        - name: add user to docker
-          ansible.builtin.raw: usermod -aG docker {{ ansible_user }}
+        - name: k3s - wait configuration file to be present
+          ansible.builtin.raw: while [ ! -f /etc/rancher/k3s/k3s.yaml  ]; do sleep 1; done
 
-        - name: install docker-compose
-          ansible.builtin.raw: apk add --no-cache docker-compose
+        - name: k3s - get configuration
+          ansible.builtin.raw: scp {{ username }}@{{ inventory_hostname }}:/etc/rancher/k3s/k3s.yaml .
+          delegate_to: localhost
+          changed_when: false
 
-        - name: restarting docker
-          ansible.builtin.raw: rc-service docker restart
+        - name: k3s - update local configuration
+          ansible.builtin.raw: sed -i -e 's/127.0.0.1/{{ inventory_hostname }}/g' k3s.yaml
+          delegate_to: localhost
+          changed_when: false
 
-        - name: docker on default runlevel
-          ansible.builtin.raw: rc-update add docker default
+        - name: k3s - copy config to home
+          ansible.builtin.raw: |
+            mkdir -p ~/.kube;
+            cp /etc/rancher/k3s/k3s.yaml $HOME/.kube/config;
+            chmod 0600 ~/.kube/config;
 
-    - name: reconnect to reload groups
-      meta: reset_connection
+        - name: k3s - wait for pods to be ready
+          ansible.builtin.raw: while [ $(kubectl get po -n kube-system | grep Running | wc -l) != 5 ]; do sleep 1; done
 
-    - name: put docker-compose.yml
-      ansible.builtin.raw: echo -e "version\x3A '3.8'\n\n\nservices\x3A\n  woodpecker-server\x3A\n    image\x3A woodpeckerci/woodpecker-server\x3Alatest\n    container_name\x3A woodpecker-server\n    restart\x3A always\n    ports\x3A\n      - 8000\x3A8000\n    volumes\x3A\n      - woodpecker-server-data\x3A/var/lib/woodpecker/\n    environment\x3A\n      - WOODPECKER_ADMIN=\${WOODPECKER_ADMIN}\n      - WOODPECKER_AGENT_SECRET=\${WOODPECKER_AGENT_SECRET}\n      - WOODPECKER_GITEA=true\n      - WOODPECKER_GITEA_CLIENT=\${WOODPECKER_GITEA_CLIENT}\n      - WOODPECKER_GITEA_SECRET=\${WOODPECKER_GITEA_SECRET}\n      - WOODPECKER_GITEA_SKIP_VERIFY=true\n      - WOODPECKER_GITEA_URL=\${WOODPECKER_GITEA_URL}\n      - WOODPECKER_HOST=\${WOODPECKER_HOST}\n      - WOODPECKER_OPEN=false\n\n\n  woodpecker-agent\x3A\n    image\x3A woodpeckerci/woodpecker-agent\x3Alatest\n    container_name\x3A woodpecker-agent\n    command\x3A agent\n    restart\x3A always\n    depends_on\x3A\n      - woodpecker-server\n    volumes\x3A\n      - woodpecker-agent-config\x3A/etc/woodpecker\n      - /var/run/docker.sock\x3A/var/run/docker.sock\n    environment\x3A\n      - WOODPECKER_AGENT_SECRET=\${WOODPECKER_AGENT_SECRET}\n      - WOODPECKER_SERVER=woodpecker-server\x3A9000\n\n\nvolumes\x3A\n  woodpecker-server-data\x3A\n  woodpecker-agent-config\x3A" > docker-compose.yml
+        - name: k3s - set garbage collection limits
+          ansible.builtin.raw: scp config.yaml {{ username }}@{{ inventory_hostname }}:/etc/rancher/k3s/config.yaml
+          delegate_to: localhost
+          changed_when: false
 
-    - name: put .env
-      ansible.builtin.raw: echo -e "WOODPECKER_ADMIN={{ woodpecker_admin }}\nWOODPECKER_HOST=https://{{ ci_host }}:{{ ci_port }}\nWOODPECKER_GITEA_URL=https://{{ ci_host }}:{{ ci_port }}/git/\nWOODPECKER_GITEA_CLIENT={{ git_client }}\nWOODPECKER_GITEA_SECRET={{ git_secret }}\nWOODPECKER_AGENT_SECRET=$(tr -dc a-z0-9 </dev/urandom | head -c64)" > .env
+        - name: k3s - restart
+          ansible.builtin.raw: service k3s restart
 
-    - name: set chmod
-      ansible.builtin.raw: chmod 0600 docker-compose.yml .env
+        - name: install helm
+          ansible.builtin.raw: apk add --no-cache helm
 
-    - name: starting services...
-      ansible.builtin.raw: docker-compose up -d
+        - name: helm - add concourse repository
+          ansible.builtin.raw: helm repo add concourse https://concourse-charts.storage.googleapis.com
+
+        - name: helm - send values
+          ansible.builtin.raw: scp values.yaml {{ username }}@{{ inventory_hostname }}:~/values.yaml
+          delegate_to: localhost
+          changed_when: false
+
+        - name: helm - install concourse
+          ansible.builtin.raw: helm install concourse -f values.yaml -n concourse --create-namespace concourse/concourse
+
+        - name: helm - wait for pods to be ready
+          ansible.builtin.raw: while [ $(kubectl get po -n concourse | grep Running | wc -l) != 4 ]; do sleep 1; done
+
+        - name: send ingress configuration
+          ansible.builtin.raw: scp ingress.yaml {{ username }}@{{ inventory_hostname }}:~/ingress.yaml
+          delegate_to: localhost
+          changed_when: false
+
+        - name: helm - apply ingress
+          ansible.builtin.raw: kubectl apply -f ingress.yaml

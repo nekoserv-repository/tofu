@@ -49,18 +49,12 @@ resource "proxmox_virtual_environment_vm" "alpine_vm" {
     enabled = false
   }
 
-  startup {
-    order      = "1"
-    up_delay   = "30"
-    down_delay = "30"
-  }
-
   cpu {
     cores = 3
   }
 
   memory {
-    dedicated = 1024
+    dedicated = 4096
   }
 
 
@@ -72,7 +66,9 @@ resource "proxmox_virtual_environment_vm" "alpine_vm" {
     datastore_id = "local-lvm"
     file_id      = proxmox_virtual_environment_file.cloud_image[count.index].id
     interface    = "scsi0"
-    size         = 4
+    discard	 = "on"
+    ssd		 = true
+    size         = 12
   }
 
   # cloud image expects a serial port to be present
