@@ -303,12 +303,12 @@ concourse:
 
     ## Interval on which to check for new versions of resources.
     ##
-    resourceCheckingInterval: 1m
+    resourceCheckingInterval: 30m
 
     ## Interval on which to check for new versions of any resources that have
     ## configured a webhook token
     ##
-    resourceWithWebhookCheckingInterval: 1m
+    resourceWithWebhookCheckingInterval: 30m
 
     ## Configuration file for specifying defaults for base resource types
     ## Ref: https://concourse-ci.org/concourse-web.html#resource-defaults
@@ -427,19 +427,19 @@ concourse:
 
     ## Default number of build logs to retain. 0 means all.
     ##
-    defaultBuildLogsToRetain:
+    defaultBuildLogsToRetain: 3
 
     ## Maximum build logs to retain, 0 means not specified. Will override values configured in jobs.
     ##
-    maxBuildLogsToRetain:
+    maxBuildLogsToRetain: 5
 
     ## Default days to retain build logs. 0 means unlimited.
     ##
-    defaultDaysToRetainBuildLogs:
+    defaultDaysToRetainBuildLogs: 7
 
     ## Maximum days to retain build logs, 0 means not specified. Will override values configured in jobs.
     ##
-    maxDaysToRetainBuildLogs:
+    maxDaysToRetainBuildLogs: 7
 
     ## Default max number of cpu shares per task, 0 means unlimited.
     ##
@@ -1705,7 +1705,7 @@ concourse:
 
     ## Runtime to use with the worker. Possible values: guardian, containerd, houdini.
     ## Please note that Houdini is insecure and doesn't run 'tasks' in containers.
-    runtime:
+    runtime: containerd
 
     tsa:
 
