@@ -1,0 +1,20 @@
+# config
+enable-index-links=1
+enable-commit-graph=1
+enable-log-filecount=1
+enable-log-linecount=1
+#about-filter=/usr/lib/cgit/filters/about-formatting.sh
+source-filter=/usr/lib/cgit/filters/highlighting.sh
+
+# html
+virtual-root=/cgit/
+css=/cgit/cgit.css
+favicon=/cgit/favicon.ico
+logo=/cgit/cgit.png
+
+# repo settings
+clone-url=https://$HTTP_HOST/cgit/$CGIT_REPO_URL ssh://git@ANSIBLE_HOST/$CGIT_REPO_URL
+readme=main:README.md
+
+# auto scan
+scan-path=/var/lib/git/repositories/
