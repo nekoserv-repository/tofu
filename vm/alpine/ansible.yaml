@@ -213,7 +213,9 @@
           changed_when: false
 
         - name: helm - install concourse
-          ansible.builtin.raw: helm install concourse -f values.yaml -n concourse --create-namespace concourse/concourse
+          ansible.builtin.raw: |
+            helm install concourse -f values.yaml -n concourse --create-namespace concourse/concourse;
+            rm values.yaml
 
         - name: helm - wait for pods to be ready
           ansible.builtin.raw: while [ $(kubectl get po -n concourse | grep Running | wc -l) != 4 ]; do sleep 1; done
@@ -224,4 +226,6 @@
           changed_when: false
 
         - name: helm - apply ingress
-          ansible.builtin.raw: kubectl apply -f ingress.yaml
+          ansible.builtin.raw: |
+            kubectl apply -f ingress.yaml;
+            rm ingress.yaml
