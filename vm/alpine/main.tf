@@ -39,7 +39,8 @@ resource "proxmox_virtual_environment_file" "cloud_image" {
 
 resource "proxmox_virtual_environment_vm" "alpine_vm" {
   count         = 1
-  name          = "alpine-vm"
+  name          = "k3s-0${count.index + 1}"
+
   node_name     = var.proxmox_host
   vm_id         = count.index + 150
   tablet_device = "false"
@@ -102,13 +103,11 @@ resource "proxmox_virtual_environment_file" "cloud_config" {
   content_type = "snippets"
   datastore_id = "local"
   node_name    = var.proxmox_host
-  #node_name    = "server-0${count.index + 1}"
 
   source_raw {
     data = <<EOF
 #cloud-config
-#hostname: k8s-node-${count.index + 1}
-hostname: alpine-vm
+hostname: k3s-0${count.index + 1}
 
 manage_resolv_conf: true
 resolv_conf:
