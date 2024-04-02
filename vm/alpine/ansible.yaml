@@ -222,6 +222,9 @@
           delegate_to: localhost
           changed_when: false
 
+        - name: patch ingress.yaml
+          ansible.builtin.raw: sed -i -e 's/host.*/host\x3A {{ ci_host }}/g' ingress.yaml
+
         - name: helm - apply ingress
           ansible.builtin.raw: |
             kubectl apply -f ingress.yaml;

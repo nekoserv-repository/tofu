@@ -7,12 +7,13 @@ metadata:
     spec.ingressClassName: traefik
 spec:
   rules:
-  - http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: concourse-web
-            port:
-              number: 8080
+    - host: TODO
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: concourse-web
+                port:
+                  number: 8080
