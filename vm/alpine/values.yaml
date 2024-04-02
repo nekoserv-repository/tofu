@@ -253,7 +253,7 @@ concourse:
     ##
     ## Example: http://ci.concourse-ci.org
     ##
-    externalUrl:
+    externalUrl: TODO
 
     encryption:
       ## Enable encryption of pipeline configuration. Encryption keys can be set via secrets

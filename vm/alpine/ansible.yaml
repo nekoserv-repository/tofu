@@ -212,6 +212,9 @@
           delegate_to: localhost
           changed_when: false
 
+        - name: patch values.yaml
+          ansible.builtin.raw: sed -i -e 's/^    externalUrl.*/    externalUrl\x3A https\x3A\/\/{{ ci_host }}\x3A{{ci_port}}/g' values.yaml
+
         - name: helm - install concourse
           ansible.builtin.raw: |
             helm install concourse -f values.yaml -n concourse --create-namespace concourse/concourse;
