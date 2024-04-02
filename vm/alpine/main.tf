@@ -31,8 +31,8 @@ resource "proxmox_virtual_environment_file" "cloud_image" {
   node_name    = var.proxmox_host
 
   source_file {
-    path      = "nocloud_alpine-3.19.0-x86_64-bios-cloudinit-r0.qcow2"
-    file_name = "nocloud_alpine-3.19.0-x86_64-bios-cloudinit-r0.img"
+    path      = "nocloud_alpine-3.19.1-x86_64-bios-cloudinit-r0.qcow2"
+    file_name = "nocloud_alpine-3.19.1-x86_64-bios-cloudinit-r0.img"
   }
 }
 
