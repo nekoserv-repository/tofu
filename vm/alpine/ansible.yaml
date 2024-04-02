@@ -157,7 +157,7 @@
           become: false
 
         - name: install tools
-          ansible.builtin.raw: apk add --no-cache curl file htop
+          ansible.builtin.raw: apk add --no-cache curl htop sed
 
         - name: k3s - install
 #        ## sqlite
@@ -166,7 +166,7 @@
 #          ansible.builtin.raw: curl -sfL https://get.k3s.io | sh -s - server --cluster-init
 
         - name: k3s - wait configuration file to be present
-          ansible.builtin.raw: while [ ! -f /etc/rancher/k3s/k3s.yaml  ]; do sleep 1; done
+          ansible.builtin.raw: while [ ! -f /etc/rancher/k3s/k3s.yaml ]; do sleep 1; done
 
         - name: k3s - get configuration
           ansible.builtin.raw: scp {{ username }}@{{ inventory_hostname }}:/etc/rancher/k3s/k3s.yaml .
@@ -226,3 +226,6 @@
           ansible.builtin.raw: |
             kubectl apply -f ingress.yaml;
             rm ingress.yaml
+
+        - name: remove tools
+          ansible.builtin.raw: apk del --purge curl sed
