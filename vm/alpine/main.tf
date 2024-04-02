@@ -2,7 +2,7 @@ terraform {
   required_providers {
     proxmox = {
       source = "bpg/proxmox"
-      version = "0.42.1"
+      version = "0.51.0"
     }
   }
 }
@@ -24,16 +24,15 @@ provider "proxmox" {
 }
 
 
-resource "proxmox_virtual_environment_file" "cloud_image" {
-  count        = 1
-  content_type = "iso"
-  datastore_id = "local"
-  node_name    = var.proxmox_host
-
-  source_file {
-    path      = "nocloud_alpine-3.19.1-x86_64-bios-cloudinit-r0.qcow2"
-    file_name = "nocloud_alpine-3.19.1-x86_64-bios-cloudinit-r0.img"
-  }
+resource "proxmox_virtual_environment_download_file" "cloud_image" {
+  count              = "1"
+  content_type       = "iso"
+  datastore_id       = "local"
+  node_name          = var.proxmox_host
+  url                = "https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/cloud/nocloud_alpine-3.19.1-x86_64-bios-cloudinit-r0.qcow2"
+  file_name          = "nocloud_alpine-3.19.1-x86_64-bios-cloudinit-r0.img"
+  checksum           = "f122b0e9e832cf90bda49ca73b800105ab4aa193bd340cba641e6acbda1da9aa5571de87870561380ac69bdb2dcd428590e7b4a898f7f62b559f5c12a4aefc01"
+  checksum_algorithm = "sha512"
 }
 
 
@@ -65,7 +64,7 @@ resource "proxmox_virtual_environment_vm" "alpine_vm" {
 
   disk {
     datastore_id = "local-lvm"
-    file_id      = proxmox_virtual_environment_file.cloud_image[count.index].id
+    file_id      = proxmox_virtual_environment_download_file.cloud_image[count.index].id
     interface    = "scsi0"
     discard	 = "on"
     ssd		 = true
