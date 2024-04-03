@@ -138,6 +138,6 @@ runcmd:
 
 EOF
     # Prevent files overwriting eachother by giving them unique names with the count.index
-    file_name = "alpine-terraform-cloud-config-${count.index}.yaml"
+    file_name = "cloud-config-k3s-0${count.index}.yaml"
   }
 }
