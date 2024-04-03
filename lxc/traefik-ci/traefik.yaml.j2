@@ -40,8 +40,6 @@ http:
         - "https"
       tls:
         certResolver: default-ssl
-      middlewares:
-        - ip-allow-list
     registry-router:
       rule: "Host(`{{ host }}`) && PathPrefix(`/v2`)"
       service: "registry-svc"
@@ -49,8 +47,6 @@ http:
         - "https"
       tls:
         certResolver: default-ssl
-      middlewares:
-        - ip-allow-list
     registry-ui-router:
       rule: "Host(`{{ host }}`) && PathPrefix(`/ui`)"
       service: "registry-ui-svc"
@@ -59,7 +55,6 @@ http:
       tls:
         certResolver: default-ssl
       middlewares:
-        - ip-allow-list
         - registry-ui-strip-prefix
     ci-router:
       rule: "Host(`{{ host }}`) && PathPrefix(`/`)"
@@ -68,8 +63,6 @@ http:
         - "https"
       tls:
         certResolver: default-ssl
-      middlewares:
-        - ip-allow-list
 
   services:
     git-svc:
@@ -90,12 +83,6 @@ http:
           - url: "{{ ci_host }}"
 
   middlewares:
-    ip-allow-list:
-      ipWhiteList:
-        sourceRange:
-          - "{{ ci_range_1 }}"
-          - "{{ ci_range_2 }}"
-          - "{{ ci_range_3 }}"
     registry-ui-strip-prefix:
       stripPrefix:
         prefixes:

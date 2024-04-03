@@ -27,6 +27,8 @@ resource "proxmox_lxc" "lxc-container" {
     bridge = var.bridge_name
     ip = var.ip_addr
     gw = var.gw
+    ip6 = var.ipv6_addr
+    gw6 = var.ipv6_gw
   }
   start = true
   ostemplate = var.template_name

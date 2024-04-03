@@ -46,3 +46,9 @@ variable "ip_addr" {
 variable "gw" {
    default = "none"
 }
+variable "ipv6_addr" {
+   default = "none"
+}
+variable "ipv6_gw" {
+   default = "none"
+}
