@@ -129,6 +129,6 @@ runcmd:
   - rc-service qemu-guest-agent start
 
 EOF
-    file_name = "alpine-terraform-cloud-config-${count.index}.yaml"
+    file_name = "cloud-config-test-0${count.index}.yaml"
   }
 }
