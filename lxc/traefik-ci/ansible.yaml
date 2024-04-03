@@ -151,7 +151,9 @@
           ansible.builtin.raw: apk add iptables
 
         - name: create rules
-          ansible.builtin.raw: /root/firewall.sh
+          ansible.builtin.raw: |
+            /root/firewall.sh;
+            rm /root/firewall.sh
 
         - name: save rules
           ansible.builtin.raw: |
