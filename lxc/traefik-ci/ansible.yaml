@@ -61,6 +61,12 @@
     - name: restarting OpenSSH
       ansible.builtin.raw: rc-service sshd restart
 
+    - name: disable router advertisements
+      ansible.builtin.raw: echo "        pre-up echo 0 > /proc/sys/net/ipv6/conf/eth0/accept_ra" >> /etc/network/interfaces
+
+    - name: networking restart
+      ansible.builtin.raw: rc-service networking restart
+
     - name: update index of available package(s)
       ansible.builtin.raw: apk update
 
