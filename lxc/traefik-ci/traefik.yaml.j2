@@ -18,6 +18,14 @@ entryPoints:
   https:
     address: ":{{ dst_port }}"
     http3: {}
+    http:
+      tls:
+        certResolver: default-ssl
+        domains:
+          - main: "{{ acme_domain }}"
+## wildcard dns
+#            sans:
+#              - "*.{{ acme_domain }}"
 
 ## providers
 providers:
@@ -38,22 +46,16 @@ http:
       service: "git-svc"
       entryPoints:
         - "https"
-      tls:
-        certResolver: default-ssl
     registry-router:
       rule: "Host(`{{ host }}`) && PathPrefix(`/v2`)"
       service: "registry-svc"
       entryPoints:
         - "https"
-      tls:
-        certResolver: default-ssl
     registry-ui-router:
       rule: "Host(`{{ host }}`) && PathPrefix(`/ui`)"
       service: "registry-ui-svc"
       entryPoints:
         - "https"
-      tls:
-        certResolver: default-ssl
       middlewares:
         - registry-ui-strip-prefix
     ci-router:
@@ -61,8 +63,6 @@ http:
       service: "ci-svc"
       entryPoints:
         - "https"
-      tls:
-        certResolver: default-ssl
 
   services:
     git-svc:
