@@ -106,6 +106,9 @@
       - name: install gitolite
         ansible.builtin.raw: apk add gitolite
 
+      - name: add git-daemon for smart http
+        ansible.builtin.raw: apk add git-daemon
+
       - name: install highlight
         ansible.builtin.raw: apk add highlight
 
@@ -212,16 +215,27 @@
 
     - name: uWSGI config
       block:
-      - name: send cgit.init configuration
+      - name: send cgit.ini configuration
         ansible.builtin.raw: scp cgit.ini {{ ansible_user }}@{{ inventory_hostname }}:/etc/uwsgi/conf.d/cgit.ini
+        delegate_to: localhost
+        changed_when: false
+
+      - name: send http.ini configuration
+        ansible.builtin.raw: scp http.ini {{ ansible_user }}@{{ inventory_hostname }}:/etc/uwsgi/conf.d/http.ini
         delegate_to: localhost
         changed_when: false
 
       - name: configure uwsgi.git users
         ansible.builtin.raw: echo -e "user=nginx\ngroup=nginx" > /etc/conf.d/uwsgi.cgit
 
-      - name: create symlinks
+      - name: configure uwsgi.http users
+        ansible.builtin.raw: echo -e "user=nginx\ngroup=nginx" > /etc/conf.d/uwsgi.http
+
+      - name: create uwsgi.cgit symlinks
         ansible.builtin.raw: ln -s /etc/init.d/uwsgi /etc/init.d/uwsgi.cgit
+
+      - name: create uwsgi.http symlinks
+        ansible.builtin.raw: ln -s /etc/init.d/uwsgi /etc/init.d/uwsgi.http
 
 
     - name: restart and runlevels
@@ -237,3 +251,9 @@
 
       - name: uwsgi.cgit on default runlevel
         ansible.builtin.raw: rc-update add uwsgi.cgit default
+
+      - name: restarting uwsgi.http
+        ansible.builtin.raw: rc-service uwsgi.http restart
+
+      - name: uwsgi.http on default runlevel
+        ansible.builtin.raw: rc-update add uwsgi.http default
