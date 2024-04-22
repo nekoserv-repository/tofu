@@ -31,6 +31,14 @@ variable "ip_addr" {
 # gw
 variable "gw" {
 }
+# ipv6_addr
+variable "ipv6_addr" {
+   default = "none"
+}
+# ipv6_gw
+variable "ipv6_gw" {
+   default = "none"
+}
 # dns1
 variable "dns1" {
 }

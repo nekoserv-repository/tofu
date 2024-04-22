@@ -79,13 +79,14 @@ resource "proxmox_virtual_environment_vm" "alpine_vm" {
   }
 
   initialization {
-    #dns {
-    #  servers   = var.dns
-    #}
     ip_config {
-      ipv4 {
-        address = var.ip_addr
-        gateway = var.gw
+#      ipv4 {
+#        address = var.ip_addr
+#        gateway = var.gw
+#      }
+      ipv6 {
+        address = var.ipv6_addr
+        gateway = var.ipv6_gw
       }
     }
     user_account {
