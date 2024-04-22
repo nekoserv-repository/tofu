@@ -21,7 +21,7 @@ variable "proxmox_host" {
     default = "proxmox"
 }
 variable "template_name" {
-    default = "local:vztmpl/alpine-3.19.0.tar.zst"
+    default = "local:vztmpl/alpine-3.19.1.tar.zst"
 }
 variable "ethernet_name" {
     default = "eth0"
