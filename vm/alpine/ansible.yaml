@@ -206,7 +206,7 @@
 
         - name: k3s - update local configuration
           ansible.builtin.raw: |
-            sed -i -e 's/127.0.0.1/{{ inventory_hostname }}/g' k3s.yaml;
+            sed -i -e 's/127.0.0.1/{{ hostname }}/g' k3s.yaml;
             sed -i -e 's/\[::1\]/{{ hostname }}/g' k3s.yaml
           delegate_to: localhost
           changed_when: false
