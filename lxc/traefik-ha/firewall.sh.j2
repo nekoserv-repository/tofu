@@ -27,3 +27,4 @@ ip6tables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 ip6tables -A INPUT -i lo -j ACCEPT
 ip6tables -A INPUT -p ipv6-icmp -j ACCEPT
 ip6tables -A INPUT -p tcp --dport {{ dst_port }} -j ACCEPT
+ip6tables -A INPUT -p udp --dport {{ dst_port }} -j ACCEPT
