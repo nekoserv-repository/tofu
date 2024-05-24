@@ -29,3 +29,4 @@ ip6tables -A INPUT -p ipv6-icmp -j ACCEPT
 #ip6tables -A INPUT -p udp -m conntrack --ctstate NEW -j REJECT --reject-with icmp6-port-unreachable
 #ip6tables -A INPUT -p tcp -m tcp --tcp-flags FIN,SYN,RST,ACK SYN -m conntrack --ctstate NEW -j REJECT --reject-with tcp-reset
 ip6tables -A INPUT -p tcp --src {{ ipv6_range }} --dport 443 -j ACCEPT
+ip6tables -A INPUT -p udp --src {{ ipv6_range }} --dport 443 -j ACCEPT
