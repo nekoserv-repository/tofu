@@ -7,8 +7,8 @@ ansible-playbook -e @secrets.enc --ask-vault-pass ansible.yaml
 sed -i -e "s/3.19/3.20/g" /etc/apk/repositories
 apk update
 apk upgrade -i -a --update-cache
-update-config -a -l
-update-config -a
+#update-conf -a -l
+update-conf -a
 apk del --purge doas
 apk del --purge openssh; apk add --no-cache openssh-server
 sync
