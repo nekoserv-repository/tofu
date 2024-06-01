@@ -150,7 +150,7 @@
               ansible.builtin.raw: sed -i -e 's/^#rc_cgroup_controllers=.*/rc_cgroup_controllers="cpuset cpu io memory hugetlb pids"/g' /etc/rc.conf
 
             - name: restart cgroups
-              ansible.builtin.raw: service cgroups restart | cat
+              ansible.builtin.raw: rc-service cgroups restart
 
         - name: update index of available package(s)
           ansible.builtin.raw: apk update
@@ -199,28 +199,40 @@
 #        - name: k3s - install
 #          ansible.builtin.raw: curl -sfL https://get.k3s.io | sh -s - server --cluster-init
 
-        - name: k3s - wait configuration file to be present
-          ansible.builtin.raw: while [ ! -f /etc/rancher/k3s/k3s.yaml ]; do sleep 1; done
+        - name: k3s - remote config
+          block:
+            - name: k3s - wait remote config to be created
+              ansible.builtin.raw: while [ ! -f /etc/rancher/k3s/k3s.yaml ]; do sleep 1; done
 
-        - name: k3s - get configuration
-          ansible.builtin.raw: scp {{ username }}@{{ hostname }}:/etc/rancher/k3s/k3s.yaml .
-          delegate_to: localhost
-          changed_when: false
+            - name: k3s - remote config to .kube dir
+              ansible.builtin.raw: |
+                mkdir -m 0700 -p ~/.kube;
+                cp /etc/rancher/k3s/k3s.yaml $HOME/.kube/config;
+                chmod 0600 ~/.kube/config;
 
-        - name: k3s - update local configuration
-          ansible.builtin.raw: |
-            sed -i -e 's/127.0.0.1/{{ hostname }}/g' k3s.yaml;
-            sed -i -e 's/\[::1\]/{{ hostname }}/g' k3s.yaml
-          delegate_to: localhost
-          changed_when: false
+        - name: k3s - local config
+          block:
+            - name: k3s - create local .kube dir
+              ansible.builtin.raw: mkdir -m 0700 -p ~/.kube
+              delegate_to: localhost
 
-        - name: k3s - copy config to home
-          ansible.builtin.raw: |
-            mkdir -p ~/.kube;
-            cp /etc/rancher/k3s/k3s.yaml $HOME/.kube/config;
-            chmod 0600 ~/.kube/config;
+            - name: k3s - get remote config
+              ansible.builtin.raw: scp {{ username }}@{{ hostname }}:/etc/rancher/k3s/k3s.yaml ~/.kube/config
+              delegate_to: localhost
+              changed_when: false
 
-        - name: k3s - wait for pods to be ready
+            - name: k3s - update local configuration
+              ansible.builtin.raw: |
+                sed -i -e 's/127.0.0.1/{{ hostname }}/g' ~/.kube/config;
+                sed -i -e 's/\[::1\]/{{ hostname }}/g' ~/.kube/config;
+                chmod 0600 ~/.kube/config;
+              delegate_to: localhost
+              changed_when: false
+
+        - name: k3s - wait for helm to be installed
+          ansible.builtin.raw: while [ $(kubectl get po -n kube-system | awk '/helm-install/ && /Completed/' | wc -l) != 2 ]; do sleep 1; done
+
+        - name: k3s - wait for all other pods to be ready
           ansible.builtin.raw: while [ $(kubectl get po -n kube-system | grep Running | wc -l) != 5 ]; do sleep 1; done
 
         - name: k3s - set garbage collection limits
@@ -229,10 +241,7 @@
           changed_when: false
 
         - name: k3s - restart
-          ansible.builtin.raw: service k3s restart
-
-#        - name: install helm
-#          ansible.builtin.raw: apk add --no-cache helm
+          ansible.builtin.raw: rc-service k3s restart
 
         - name: remove tools
           ansible.builtin.raw: apk del --purge curl sed
