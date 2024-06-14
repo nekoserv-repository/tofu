@@ -1,18 +1,16 @@
-![terraform](https://repository-images.githubusercontent.com/676958218/b4491821-1215-441b-8694-94712203ef7b)
+![tofu](https://repository-images.githubusercontent.com/805379847/8e9b052b-94e2-40c5-8def-9e46db826f2a)
 
-<br />
+<br/>
+**How to use:**
 
-How to use :
+- install OpenTofu: https://opentofu.org/docs/intro/install/
+- OR fast install: sudo sh -c 'wget https://github.com/opentofu/opentofu/releases/download/v1.7.2/tofu_1.7.2_linux_amd64.tar.gz -O- | tar -C /usr/local/bin -zx tofu'
 
-- install :
-  - wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-  - echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
-  - sudo apt update && sudo apt install terraform
+- clone: git clone https://github.com/nekoserv-repository/tofu.git
 
-- clone : git clone https://github.com/nekoserv-repository/terraform.git
+- edit secret vault: ansible-vault edit secrets.enc
 
-- update vault : ansible-vault edit secrets.enc
-
-- run examples :
-  - terraform init
+- run examples:
+  - tofu init
+  - tofu destroy --auto-approve
   - ansible-playbook -e @secrets.enc --ask-vault-pass ansible.yaml
