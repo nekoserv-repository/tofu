@@ -17,20 +17,20 @@
 
   tasks:
     - name: generate tfvars
-      ansible.builtin.raw: echo "{{ tf_vars }}" > terraform.tfvars
+      ansible.builtin.raw: echo "{{ tf_vars }}" > .auto.tfvars
       delegate_to: localhost
 
-    - name: terraform plan
-      ansible.builtin.raw: terraform plan -out 'plan'
+    - name: tofu plan
+      ansible.builtin.raw: tofu plan -out 'plan'
       delegate_to: localhost
-      register: terraform_plan
-      changed_when: "'no changes' not in terraform_plan.stdout"
+      register: tofu_plan
+      changed_when: "'no changes' not in tofu_plan.stdout"
 
-    - name: terraform apply plan
-      ansible.builtin.raw: terraform apply plan
+    - name: tofu apply plan
+      ansible.builtin.raw: tofu apply plan
       delegate_to: localhost
-      register: terraform_apply
-      changed_when: "'1 added' in terraform_apply.stdout"
+      register: tofu_apply
+      changed_when: "'1 added' in tofu_apply.stdout"
 
     - name: waiting for {{ inventory_hostname }} to be ready
       wait_for:
