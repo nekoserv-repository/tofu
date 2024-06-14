@@ -50,11 +50,9 @@ http:
         - "https"
     registry-ui-router:
       rule: "Host(`{{ host }}`) && PathPrefix(`/ui`)"
-      service: "registry-ui-svc"
+      service: "ci-svc"
       entryPoints:
         - "https"
-      middlewares:
-        - registry-ui-strip-prefix
     ci-router:
       rule: "Host(`{{ host }}`) && PathPrefix(`/`)"
       service: "ci-svc"
@@ -70,20 +68,11 @@ http:
       loadBalancer:
         servers:
           - url: "{{ registry_host }}"
-    registry-ui-svc:
-      loadBalancer:
-        servers:
-          - url: "{{ registry_ui_host }}"
     ci-svc:
       loadBalancer:
         servers:
           - url: "{{ ci_host }}"
 
-  middlewares:
-    registry-ui-strip-prefix:
-      stripPrefix:
-        prefixes:
-          - "/ui"
 
 ## https mode : let's encrypt
 certificatesResolvers:
