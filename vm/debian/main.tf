@@ -42,7 +42,7 @@ resource "proxmox_virtual_environment_vm" "debian-12-vm" {
   count         = 1
   name          = "debian-12-vm"
   node_name     = var.proxmox_host
-  vm_id         = count.index + 150
+  vm_id         = count.index + 250
   tablet_device = "false"
   boot_order    = [ "scsi0" ]
 
