@@ -29,9 +29,9 @@ resource "proxmox_virtual_environment_download_file" "cloud_image" {
   content_type       = "iso"
   datastore_id       = "local"
   node_name          = var.proxmox_host
-  url                = "https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/cloud/nocloud_alpine-3.19.1-x86_64-bios-cloudinit-r0.qcow2"
-  file_name          = "nocloud_alpine-3.19.1-x86_64-bios-cloudinit-r0.img"
-  checksum           = "f122b0e9e832cf90bda49ca73b800105ab4aa193bd340cba641e6acbda1da9aa5571de87870561380ac69bdb2dcd428590e7b4a898f7f62b559f5c12a4aefc01"
+  url                = "https://dl-cdn.alpinelinux.org/alpine/v3.20/releases/cloud/nocloud_alpine-3.20.1-x86_64-bios-cloudinit-r0.qcow2"
+  file_name          = "nocloud_alpine-3.20.1-x86_64-bios-cloudinit-r0.img"
+  checksum           = "63288e5c1ffa499cfec5bb7f1aac73031aa21a3192faf0f511f8cf579a1edd8761e66e3a9f29bb7b9e9691e3c5108c387629d3c3da8cd24b62ff13bab49190f7"
   checksum_algorithm = "sha512"
 }
 
