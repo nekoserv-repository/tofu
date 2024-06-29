@@ -8,7 +8,6 @@ variable "memory" {
    default = "256"
 }
 variable "disk" {
-#   default = "5120M"
    default = "6144M"
 }
 variable "storage" {
