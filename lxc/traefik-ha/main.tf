@@ -16,6 +16,7 @@ provider "proxmox" {
 }
 
 resource "proxmox_lxc" "lxc-container" {
+  vmid = 101
   onboot = true
   unprivileged = true
   target_node = var.proxmox_host
