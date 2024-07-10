@@ -1,0 +1,61 @@
+{{ ansible_managed | comment }}
+
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false
+
+log:
+  filePath: /var/log/traefik/traefik.log
+  level: ERROR
+
+accessLog:
+  filePath: /var/log/traefik/access.log
+
+entryPoints:
+  https:
+    address: ":{{ dst_port }}"
+    http3: {}
+    http:
+      tls:
+        certResolver: default-ssl
+        domains:
+          - main: "{{ acme_domain }}"
+## wildcard dns
+#            sans:
+#              - "*.{{ acme_domain }}"
+
+## providers
+providers:
+  file:
+    directory: "/etc/traefik"
+    watch: false
+
+api:
+  insecure: false
+  dashboard: false
+
+ping: {}
+
+http:
+  routers:
+    main-router:
+      rule: "Host(`{{ host }}`) && PathPrefix(`/`)"
+      service: "main-svc"
+      entryPoints:
+        - "https"
+
+  services:
+    main-svc:
+      loadBalancer:
+        servers:
+          - url: "{{ ntfy_host }}"
+
+## https mode : let's encrypt
+certificatesResolvers:
+  default-ssl:
+    acme:
+      email: "contact@domain.com"
+      storage: "{{ acme_storage }}"
+      dnsChallenge:
+        provider: {{ dns_challenge_provider }}
+        delayBeforeCheck: 10
