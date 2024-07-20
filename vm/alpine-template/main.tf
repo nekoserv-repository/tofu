@@ -46,7 +46,7 @@ resource "proxmox_virtual_environment_vm" "alpine_template" {
   boot_order    = [ "scsi0" ]
 
   agent {
-    enabled = false
+    enabled = true
   }
 
   cpu {
