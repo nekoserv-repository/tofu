@@ -109,11 +109,14 @@
       - name: add git-daemon for smart http
         ansible.builtin.raw: apk add git-daemon
 
+      - name: install uwsgi and plugins
+        ansible.builtin.raw: apk add uwsgi uwsgi-cgi uwsgi-router_rewrite
+
       - name: install highlight
         ansible.builtin.raw: apk add highlight
 
-      - name: install uwsgi and plugins
-        ansible.builtin.raw: apk add uwsgi uwsgi-cgi uwsgi-router_rewrite
+      - name: install markdown
+        ansible.builtin.raw: apk add markdown
 
 
     - name: cgit config
@@ -130,6 +133,11 @@
         ansible.builtin.raw: |
           chmod 0600 /etc/cgitrc;
           chown nginx:nginx /etc/cgitrc;
+
+      - name: cgitrc - add markdown.sh script
+        ansible.builtin.raw: |
+          echo -e '#!/bin/sh\nif echo "$1" | grep -qi '\.md$'; then\n  markdown -\nelse\n  cat -\nfi' > /usr/lib/cgit/filters/markdown.sh
+          chmod 0755 /usr/lib/cgit/filters/markdown.sh;
 
 
     - name: nginx

@@ -4,7 +4,7 @@ enable-index-owner=0
 enable-commit-graph=1
 enable-log-filecount=1
 enable-log-linecount=1
-#about-filter=/usr/lib/cgit/filters/about-formatting.sh
+about-filter=/usr/lib/cgit/filters/markdown.sh
 source-filter=/usr/lib/cgit/filters/highlighting.sh
 
 # html
