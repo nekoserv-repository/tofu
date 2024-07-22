@@ -14,7 +14,7 @@ favicon=/cgit/favicon.ico
 logo=/cgit/cgit.png
 
 # repo settings
-clone-url=https://$HTTP_HOST/cgit/$CGIT_REPO_URL ssh://git@ANSIBLE_HOST/$CGIT_REPO_URL
+clone-url=https://$HTTP_HOST/cgit/$CGIT_REPO_URL git+ssh://git@ANSIBLE_HOST/$CGIT_REPO_URL
 readme=main:README.md
 
 # auto scan
