@@ -199,9 +199,13 @@
           rm -rf ./gitolite;
           GIT_SSH_COMMAND='ssh -i {{ git_private_key_file }} -o IdentitiesOnly=yes' git clone git@{{ inventory_hostname }}:gitolite-admin ./gitolite;
           sed -i -e '2,/repo testing/d' ./gitolite/conf/gitolite.conf
-          git -C ./gitolite/ -c user.name='ansible' -c user.email='ansible@local' commit -am "Removed : testing repo";
-          echo "\nrepo docker\n    RW+     =   git" >> ./gitolite/conf/gitolite.conf;
-          git -C ./gitolite/ -c user.name='ansible' -c user.email='ansible@local' commit -am "Added : docker repo";
+          git -C ./gitolite/ -c user.name='ansible' -c user.email='ansible@local' commit -am "Removed : testing repository";
+
+          for repo in ansible docker tofu; do
+            echo "\nrepo $repo\n    RW+     =   git" >> ./gitolite/conf/gitolite.conf;
+            git -C ./gitolite/ -c user.name='ansible' -c user.email='ansible@local' commit -am "Added : $repo repository";
+          done
+
           GIT_SSH_COMMAND='ssh -i {{ git_private_key_file }} -o IdentitiesOnly=yes' git -C ./gitolite/ push;
           rm -rf gitolite;
 
