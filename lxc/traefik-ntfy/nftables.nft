@@ -1,0 +1,38 @@
+flush ruleset
+
+define iface = "eth0"
+
+table ip filter {
+	chain input {
+		type filter hook input priority 0; policy drop;
+		ct state invalid drop;
+		ct state { established, related } accept;
+		iif lo accept;
+		iif != lo ip daddr 127.0.0.0/8 drop;
+		iif $iface tcp dport 22 accept;
+	}
+	chain forward {
+		type filter hook forward priority 0; policy drop;
+	}
+	chain output {
+		type filter hook output priority 0; policy accept;
+	}
+}
+
+table ip6 filter {
+	chain input {
+		type filter hook input priority 0; policy drop;
+		ct state invalid drop;
+		ct state { established, related } accept;
+		iif lo accept;
+		iif != lo ip6 daddr ::1/128 drop;
+		iif $iface ip6 nexthdr icmpv6 icmpv6 type { nd-neighbor-solicit, nd-router-advert, nd-neighbor-advert } accept;
+		iif $iface meta l4proto {tcp, udp} th dport 443 accept;
+	}
+	chain forward {
+		type filter hook forward priority 0; policy drop;
+	}
+	chain output {
+		type filter hook output priority 0; policy accept;
+	}
+}
