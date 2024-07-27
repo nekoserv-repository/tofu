@@ -106,19 +106,25 @@
     - name: create acme directory
       ansible.builtin.raw: mkdir -m 0700 /etc/traefik-ssl; chown traefik:traefik /etc/traefik-ssl;
 
+    - name: install firewall
+      ansible.builtin.raw: apk add nftables
+
+    - name: remove default firewall configuration
+      ansible.builtin.raw: rm -rf /etc/nftables*
+
     - name: install python3 for templating
       ansible.builtin.raw: apk add --no-cache python3
 
-    - name: generate firewall.sh
-      template:
-        src: "firewall.sh.j2"
-        dest: "/root/firewall.sh"
-        mode: 0500
+    - name: send nftables.nft
+      ansible.builtin.copy:
+        src: "nftables.nft"
+        dest: "/etc/nftables.nft"
+        mode: 0600
         owner: root
         group: root
 
     - name: generate traefik.yaml
-      template:
+      ansible.builtin.template:
         src: "traefik.yaml.j2"
         dest: "/etc/traefik/traefik.yaml"
         mode: 0644
@@ -126,7 +132,7 @@
         group: traefik
 
     - name: generate acme.json
-      template:
+      ansible.builtin.template:
         src: "acme.json.j2"
         dest: "/etc/traefik-ssl/acme.json"
         mode: 0600
@@ -153,21 +159,9 @@
 
     - name: firewall stuff
       block:
-        - name: install iptables
-          ansible.builtin.raw: apk add iptables
 
-        - name: create rules
-          ansible.builtin.raw: /root/firewall.sh
-
-        - name: save rules
-          ansible.builtin.raw: |
-            /etc/init.d/iptables save;
-            /etc/init.d/ip6tables save
         - name: start firewall
-          ansible.builtin.raw: |
-            rc-service iptables start;
-            rc-service ip6tables start
+          ansible.builtin.raw: rc-service nftables start
+
         - name: enable firewall on boot
-          ansible.builtin.raw: |
-            rc-update add iptables boot;
-            rc-update add ip6tables boot;
+          ansible.builtin.raw: rc-update add nftables boot
