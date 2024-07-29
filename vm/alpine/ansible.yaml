@@ -1,13 +1,13 @@
 ---
-- name: bootstrap to {{ ansible_user }}@{{ my_host }}
+- name: bootstrap to {{ ansible_user }}@{{ host_ipv6 }}
   hosts: localhost
   gather_facts: no
 
   tasks:
     - name: add target host
       ansible.builtin.add_host:
-        hostname: "{{ my_host }}"
-        ansible_ssh_host: "{{ my_host }}"
+        hostname: "{{ host_ipv6 }}"
+        ansible_ssh_host: "{{ host_ipv6 }}"
         ansible_become_method: doas
 
 - name: vm provisioning
@@ -88,19 +88,19 @@
           ansible.builtin.raw: apk del --purge doas
 
 
-- name: bootstrap to root@{{ my_host }}
+- name: bootstrap to root@{{ host_ipv6 }}
   hosts: localhost
   gather_facts: no
   tasks:
     - name: add target host
       ansible.builtin.add_host:
-        name: "{{ my_host }}"
-        hostname: "{{ my_host }}"
+        name: "{{ host_ipv6 }}"
+        hostname: "{{ host_ipv6 }}"
         ansible_ssh_user: root
-        ansible_ssh_host: "{{ my_host }}"
+        ansible_ssh_host: "{{ host_ipv6 }}"
 
 - name: serious business
-  hosts: "{{ my_host }}"
+  hosts: "{{ host_ipv6 }}"
   gather_facts: no
   tasks:
     - name: direct root operations
@@ -183,11 +183,33 @@
         - name: install tools
           ansible.builtin.raw: apk add --no-cache curl htop sed
 
+        - name: install firewall
+          block:
+            - name: add firewall
+              ansible.builtin.raw: apk add nftables
+
+            - name: remove default firewall configuration
+              ansible.builtin.raw: rm -rf /etc/nftables*
+
+            - name: generate firewall configuration
+              ansible.builtin.template:
+                src: "nftables.nft.j2"
+                dest: "/etc/nftables.nft"
+                mode: 0600
+                owner: root
+                group: root
+
+            - name: start firewall
+              ansible.builtin.raw: rc-service nftables start
+
+            - name: enable firewall on boot
+              ansible.builtin.raw: rc-update add nftables boot
+
         - name: k3s - install
           ansible.builtin.raw: >
             export INSTALL_K3S_EXEC="server --flannel-ipv6-masq
               --kubelet-arg=node-ip=::
-              --cluster-cidr=10.42.0.0/16,2001:cafe:42::/56
+              --cluster-cidr={{ cluster_ipv4 }},{{cluster_ipv6}}
               --service-cidr=10.43.0.0/16,2001:cafe:43::/112";
             curl -sfL https://get.k3s.io | sh -
 
