@@ -260,6 +260,19 @@
         - name: k3s - wait for all other pods to be ready
           ansible.builtin.raw: while [ $(kubectl get po -n kube-system | grep Running | wc -l) != 5 ]; do sleep 1; done
 
+        - name: traefik - disable websecure port
+          block:
+            - name: send traefik-config.yaml
+              ansible.builtin.copy:
+                src: "traefik-config.yaml"
+                dest: "/var/lib/rancher/k3s/server/manifests/traefik-config.yaml"
+                mode: 0600
+                owner: root
+                group: root
+
+            - name: apply traefik configuration
+              ansible.builtin.raw: kubectl apply -f /var/lib/rancher/k3s/server/manifests/traefik-config.yaml
+
         - name: k3s - set garbage collection limits
           ansible.builtin.raw: scp config.yaml {{ username }}@{{ hostname }}:/etc/rancher/k3s/config.yaml
           delegate_to: localhost
