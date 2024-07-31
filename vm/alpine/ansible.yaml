@@ -273,6 +273,19 @@
             - name: apply traefik configuration
               ansible.builtin.raw: kubectl apply -f /var/lib/rancher/k3s/server/manifests/traefik-config.yaml
 
+        - name: apply network policies
+          block:
+            - name: send network-policies
+              ansible.builtin.copy:
+                src: "./network-policies"
+                dest: "/root"
+                mode: 0700
+                owner: root
+                group: root
+
+            - name: apply block-ipv4.yaml
+              ansible.builtin.raw: kubectl apply -f /root/network-policies/block-ipv4.yaml
+
         - name: k3s - set garbage collection limits
           ansible.builtin.raw: scp config.yaml {{ username }}@{{ hostname }}:/etc/rancher/k3s/config.yaml
           delegate_to: localhost
