@@ -1,0 +1,9 @@
+#!/bin/sh
+
+su - git << 'EOF'
+	for r in $(find /var/lib/git/repositories/ -type d -name '*.git'); do echo 'defbranch=main' > $r/cgitrc; done
+	echo 'ignore=1' > /var/lib/git/repositories/gitolite-admin.git/cgitrc
+	for r in $(find /var/lib/git/repositories/ -type d -name '*.git'); do touch -m --date @$(git -C $r log -1 --format=%ct) $r/$(git -C $r show-ref | awk '{print $2}'); done
+EOF
+
+exit 0

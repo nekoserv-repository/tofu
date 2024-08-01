@@ -254,6 +254,17 @@
         ansible.builtin.raw: ln -s /etc/init.d/uwsgi /etc/init.d/uwsgi.http
 
 
+    - name: cgit - fix idle column
+      block:
+      - name: send fix-git-idle script
+        ansible.builtin.raw: scp fix-git-idle {{ ansible_user }}@{{ inventory_hostname }}:/etc/periodic/daily/fix-git-idle
+        delegate_to: localhost
+        changed_when: false
+
+      - name: chmod fix-git-idle
+        ansible.builtin.raw: chmod 0700 /etc/periodic/daily/fix-git-idle
+
+
     - name: restart and runlevels
       block:
       - name: restarting nginx
