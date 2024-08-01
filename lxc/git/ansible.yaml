@@ -217,9 +217,8 @@
           GIT_SSH_COMMAND='ssh -i {{ git_private_key_file }} -o IdentitiesOnly=yes' git -C ./gitolite/ push;
           rm -rf gitolite;
 
-      # can still be accessed by SSH
       - name: ignore gitolite-admin.git repo
-        ansible.builtin.raw: echo "ignore=1" > /var/lib/git/repositories/gitolite-admin.git/cgitrc
+        ansible.builtin.raw: su - git -c "echo 'ignore=1' > /var/lib/git/repositories/gitolite-admin.git/cgitrc"
 
       - name: send highlighting.sh
         ansible.builtin.raw: scp highlighting.sh {{ ansible_user }}@{{ inventory_hostname }}:/usr/lib/cgit/filters/highlighting.sh
