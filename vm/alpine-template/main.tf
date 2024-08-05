@@ -9,16 +9,16 @@ terraform {
 
 
 provider "proxmox" {
-  endpoint = "https://${var.proxmox_ve}:8006/api2/json"
-  username = var.api_user
-  password = var.api_pass
+  endpoint = "https://${var.proxmox_api_host}:8006/api2/json"
+  username = var.proxmox_api_user
+  password = var.proxmox_api_pass
   insecure = true
   tmp_dir  = "/var/tmp"
   ssh {
     agent = true
     node {
       name    = "proxmox"
-      address = var.proxmox_ve
+      address = var.proxmox_api_host
     }
   }
 }
@@ -29,14 +29,14 @@ resource "proxmox_virtual_environment_download_file" "cloud_image" {
   content_type       = "iso"
   datastore_id       = "local"
   node_name          = var.proxmox_host
-  url                = "https://dl-cdn.alpinelinux.org/alpine/v3.20/releases/cloud/nocloud_alpine-3.20.1-x86_64-bios-cloudinit-r0.qcow2"
-  file_name          = "nocloud_alpine-3.20.1-x86_64-bios-cloudinit-r0.img"
-  checksum           = "63288e5c1ffa499cfec5bb7f1aac73031aa21a3192faf0f511f8cf579a1edd8761e66e3a9f29bb7b9e9691e3c5108c387629d3c3da8cd24b62ff13bab49190f7"
+  url                = var.cloud_url
+  file_name          = var.cloud_file_name
+  checksum           = var.cloud_checksum
   checksum_algorithm = "sha512"
 }
 
 
-resource "proxmox_virtual_environment_vm" "alpine_template" {
+resource "proxmox_virtual_environment_vm" "vm" {
   count         = 1
   name          = "test-0${count.index + 1}"
 
@@ -50,25 +50,24 @@ resource "proxmox_virtual_environment_vm" "alpine_template" {
   }
 
   cpu {
-    cores = 1
+    cores = var.cores
   }
 
   memory {
-    dedicated = 1024
+    dedicated = var.memory
   }
 
-
   network_device {
-    bridge = "vmbr0"
+    bridge = var.bridge_name
   }
 
   disk {
-    datastore_id = "local-lvm"
+    datastore_id = var.storage
     file_id      = proxmox_virtual_environment_download_file.cloud_image[count.index].id
     interface    = "scsi0"
     discard	 = "on"
     ssd		 = true
-    size         = 1
+    size         = var.disk
   }
 
   serial_device {}
@@ -131,4 +130,19 @@ runcmd:
 EOF
     file_name = "cloud-config-test-0${count.index}.yaml"
   }
+}
+
+locals {
+  ip_addr = replace("${var.ip_addr}", "/\\/.*/", "")
+}
+
+resource "null_resource" "ansible" {
+  triggers = {
+    always_run = "${timestamp()}"
+  }
+  provisioner "local-exec" {
+    #command = "ANSIBLE_FORCE_COLOR=True ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u ${var.ansible_user} --inventory=\"${local.ip_addr},\" -l ${local.ip_addr} --private-key ${var.private_key_path} -e 'pub_key=${var.public_key_path}' --ssh-extra-args '-o UserKnownHostsFile=/dev/null' -e @secrets.enc main.yml"
+    command = "ANSIBLE_FORCE_COLOR=True ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook --inventory=\"${local.ip_addr},\" -l ${local.ip_addr} --private-key ${var.private_key_path} -e 'pub_key=${var.public_key_path}' --ssh-extra-args '-o UserKnownHostsFile=/dev/null' main.yml"
+  }
+  depends_on = [ proxmox_virtual_environment_vm.vm ]
 }

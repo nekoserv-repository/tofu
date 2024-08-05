@@ -1,39 +1,43 @@
-#Set your public SSH key here
-variable "ssh_key" {
+# provider vars
+variable "proxmox_api_host" {
 }
-#Establish which Proxmox host you'd like to spin a VM up on
+variable "proxmox_api_user" {
+}
+variable "proxmox_api_pass" {
+}
 variable "proxmox_host" {
-    default = "proxmox"
+  default = "proxmox"
 }
-#Establish which nic you would like to utilize
-variable "nic_name" {
+
+# resource vars
+variable "cores" {
+   default = "2"
+}
+variable "memory" {
+   default = "2048"
+}
+variable "disk" {
+   default = "1"
+}
+variable "storage" {
+   default = "local-lvm"
+}
+variable "bridge_name" {
     default = "vmbr0"
 }
-#Establish the VLAN you'd like to use
-variable "vlan_num" {
-    default = "-1"
-}
-# proxmox proxmox_ve
-variable "proxmox_ve" {
-}
-# proxmox user
-variable "api_user" {
-}
-# proxmox pass
-variable "api_pass" {
-}
-# security token
-variable "token" {
-}
-# ip_addr
+
+# secret vars
 variable "ip_addr" {
 }
-# gw
 variable "gw" {
 }
-# dns1
 variable "dns1" {
 }
-# dns2
 variable "dns2" {
+}
+variable "public_key_path" {
+}
+variable "private_key_path" {
+}
+variable "ssh_key" {
 }

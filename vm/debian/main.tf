@@ -9,16 +9,16 @@ terraform {
 
 
 provider "proxmox" {
-  endpoint = "https://${var.proxmox_ve}:8006/api2/json"
-  username = var.api_user
-  password = var.api_pass
+  endpoint = "https://${var.proxmox_api_host}:8006/api2/json"
+  username = var.proxmox_api_user
+  password = var.proxmox_api_pass
   insecure = true
   tmp_dir  = "/var/tmp"
   ssh {
     agent = true
     node {
       name    = "proxmox"
-      address = var.proxmox_ve
+      address = var.proxmox_api_host
     }
   }
 }
@@ -38,7 +38,7 @@ resource "proxmox_virtual_environment_file" "cloud_image" {
 }
 
 
-resource "proxmox_virtual_environment_vm" "debian-12-vm" {
+resource "proxmox_virtual_environment_vm" "vm" {
   count         = 1
   name          = "debian-12-vm"
   node_name     = var.proxmox_host
@@ -57,20 +57,20 @@ resource "proxmox_virtual_environment_vm" "debian-12-vm" {
   }
 
   cpu {
-    cores = 3
+    cores = var.cores
   }
 
   memory {
-    dedicated = 8192
+    dedicated = var.memory
   }
 
 
   network_device {
-    bridge = "vmbr0"
+    bridge = var.bridge_name
   }
 
   disk {
-    datastore_id = "local-lvm"
+    datastore_id = var.storage
     file_id      = proxmox_virtual_environment_file.cloud_image[count.index].id
     interface    = "scsi0"
     size         = 12
@@ -93,4 +93,20 @@ resource "proxmox_virtual_environment_vm" "debian-12-vm" {
       keys     = [ var.ssh_key ]
     }
   }
+}
+
+
+locals {
+  ip_addr = replace("${var.ip_addr}", "/\\/.*/", "")
+}
+
+
+resource "null_resource" "ansible" {
+  triggers = {
+    always_run = "${timestamp()}"
+  }
+  provisioner "local-exec" {
+    command = "ANSIBLE_FORCE_COLOR=True ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook --inventory=\"${local.ip_addr},\" -l ${local.ip_addr} --private-key ${var.private_key_path} -e 'pub_key=${var.public_key_path}' --ssh-extra-args '-o UserKnownHostsFile=/dev/null' main.yml"
+  }
+  depends_on = [ proxmox_virtual_environment_vm.vm ]
 }

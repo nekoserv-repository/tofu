@@ -1,0 +1,86 @@
+---
+- name: init. vm provisioning
+  hosts: all
+  vars:
+    ansible_user: alpine
+    ansible_become_method: doas
+  gather_facts: no
+  tasks:
+    - name: waiting for {{ inventory_hostname }} to be ready
+      wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 22
+        state: started
+        delay: 5
+        timeout: 60
+      delegate_to: localhost
+
+    - name: remove previous SSH key
+      ansible.builtin.raw: ssh-keygen -f ~/.ssh/known_hosts -R {{ inventory_hostname }}
+      delegate_to: localhost
+      register: key_removal
+      changed_when: "'not found in' not in key_removal.stderr"
+
+    - name: allow new SSH key
+      ansible.builtin.raw: ssh-keyscan -H {{ inventory_hostname }} | grep ed25519 >> ~/.ssh/known_hosts
+      delegate_to: localhost
+
+    - name: root operations
+      become: true
+      block:
+        - name: gather all facts of cloud init
+          community.general.cloud_init_data_facts:
+          register: result
+
+        - name: wait for cloud init to finish
+          community.general.cloud_init_data_facts:
+            filter: status
+          register: res
+          until: "res.cloud_init_data_facts.status.v1.stage is defined and not res.cloud_init_data_facts.status.v1.stage"
+          retries: 10
+          delay: 5
+
+        - name: disable SSH password authentication
+          ansible.builtin.raw: sed -i -e 's/^#PasswordAuthentication.*/PasswordAuthentication no/g' /etc/ssh/sshd_config
+
+        - name: restarting OpenSSH
+          ansible.builtin.raw: rc-service sshd restart
+
+        - name: unlock root account
+          ansible.builtin.raw: usermod -U root
+
+        - name: set root SSH key
+          ansible.builtin.raw: cp /home/{{ ansible_user }}/.ssh/authorized_keys /root/.ssh/authorized_keys
+
+        - name: remove doas message
+          ansible.builtin.raw: sed -i -e '/doas/,+1d' /etc/motd
+
+        - name: remove doas
+          ansible.builtin.raw: apk del --purge doas
+
+- name: root operations
+  hosts: all
+  vars:
+    ansible_user: root
+  gather_facts: no
+  tasks:
+    - name: disable IPv6
+      ansible.builtin.raw: |
+        echo "net.ipv6.conf.all.disable_ipv6 = 1" >> /etc/sysctl.conf;
+        sysctl -p;
+
+    - name: update index of available package(s)
+      ansible.builtin.raw: apk update
+
+    - name: check package(s) update(s)
+      ansible.builtin.raw: apk version -l '<'
+      changed_when: pkgs_output.stdout.splitlines()|length > 1
+      failed_when: pkgs_output.stdout.splitlines()|length == 0
+      register: pkgs_output
+
+    - name: upgrading {{ pkgs_output.stdout.splitlines()|length - 1 }} package(s)
+      ansible.builtin.raw: apk upgrade
+      when: pkgs_output.stdout.splitlines()|length > 1
+
+    - name: install tools
+      ansible.builtin.raw: apk add --no-cache htop

@@ -1,39 +1,54 @@
-#Set your public SSH key here
-variable "ssh_key" {
+# provider vars
+variable "proxmox_api_host" {
 }
-#Establish which Proxmox host you'd like to spin a VM up on
+variable "proxmox_api_user" {
+}
+variable "proxmox_api_pass" {
+}
 variable "proxmox_host" {
-    default = "proxmox"
+  default = "proxmox"
 }
-#Establish which nic you would like to utilize
-variable "nic_name" {
+
+# resource vars
+variable "cores" {
+   default = "1"
+}
+variable "memory" {
+   default = "1024"
+}
+variable "disk" {
+   default = "1"
+}
+variable "storage" {
+   default = "local-lvm"
+}
+variable "bridge_name" {
     default = "vmbr0"
 }
-#Establish the VLAN you'd like to use
-variable "vlan_num" {
-    default = "-1"
+
+# cloud vars
+variable "cloud_url" {
+    default = "https://dl-cdn.alpinelinux.org/alpine/v3.20/releases/cloud/nocloud_alpine-3.20.1-x86_64-bios-cloudinit-r0.qcow2"
 }
-# proxmox proxmox_ve
-variable "proxmox_ve" {
+variable "cloud_file_name" {
+    default = "nocloud_alpine-3.20.1-x86_64-bios-cloudinit-r0.img"
 }
-# proxmox user
-variable "api_user" {
+variable "cloud_checksum" {
+    default = "63288e5c1ffa499cfec5bb7f1aac73031aa21a3192faf0f511f8cf579a1edd8761e66e3a9f29bb7b9e9691e3c5108c387629d3c3da8cd24b62ff13bab49190f7"
 }
-# proxmox pass
-variable "api_pass" {
-}
-# security token
-variable "token" {
-}
-# ip_addr
+
+# secret vars
 variable "ip_addr" {
 }
-# gw
 variable "gw" {
 }
-# dns1
 variable "dns1" {
 }
-# dns2
 variable "dns2" {
+}
+variable "public_key_path" {
+}
+variable "private_key_path" {
+}
+variable "ssh_key" {
 }
