@@ -4,7 +4,7 @@
 **How to use:**
 
 - install OpenTofu: https://opentofu.org/docs/intro/install/
-- OR fast install: sudo sh -c 'wget https://github.com/opentofu/opentofu/releases/download/v1.7.2/tofu_1.7.2_linux_amd64.tar.gz -O- | tar -C /usr/local/bin -zx tofu'
+- OR fast install: sudo sh -c 'wget https://github.com/opentofu/opentofu/releases/download/v1.8.0/tofu_1.8.0_linux_amd64.tar.gz -O- | tar -C /usr/local/bin -zx tofu'
 
 - clone: git clone https://github.com/nekoserv-repository/tofu.git
 
