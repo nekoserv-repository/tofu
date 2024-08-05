@@ -1,7 +1,7 @@
 flush ruleset
 
 define iface = "eth0"
-define ipv6_range = {{ ipv6_range }}
+define ipv6_range = {{ nft_ipv6_range }}
 
 table ip filter {
 	chain input {

@@ -13,7 +13,7 @@ accessLog:
 
 entryPoints:
   https:
-    address: ":{{ dst_port }}"
+    address: ":{{ traefik_dst_port }}"
     http3: {}
     http:
       tls:
@@ -39,22 +39,22 @@ ping: {}
 http:
   routers:
     git-router:
-      rule: "Host(`{{ host }}`) && PathPrefix(`/cgit`)"
+      rule: "Host(`{{ acme_domain }}`) && PathPrefix(`/cgit`)"
       service: "git-svc"
       entryPoints:
         - "https"
     registry-router:
-      rule: "Host(`{{ host }}`) && PathPrefix(`/v2`)"
+      rule: "Host(`{{ acme_domain }}`) && PathPrefix(`/v2`)"
       service: "registry-svc"
       entryPoints:
         - "https"
     registry-ui-router:
-      rule: "Host(`{{ host }}`) && PathPrefix(`/ui`)"
+      rule: "Host(`{{ acme_domain }}`) && PathPrefix(`/ui`)"
       service: "ci-svc"
       entryPoints:
         - "https"
     ci-router:
-      rule: "Host(`{{ host }}`) && PathPrefix(`/`)"
+      rule: "Host(`{{ acme_domain }}`) && PathPrefix(`/`)"
       service: "ci-svc"
       entryPoints:
         - "https"
@@ -63,15 +63,15 @@ http:
     git-svc:
       loadBalancer:
         servers:
-          - url: "{{ git_host }}"
+          - url: "{{ traefik_host_git }}"
     registry-svc:
       loadBalancer:
         servers:
-          - url: "{{ registry_host }}"
+          - url: "{{ traefik_host_registry }}"
     ci-svc:
       loadBalancer:
         servers:
-          - url: "{{ ci_host }}"
+          - url: "{{ traefik_host_ci }}"
 
 
 ## https mode : let's encrypt
@@ -79,7 +79,7 @@ certificatesResolvers:
   default-ssl:
     acme:
       email: "contact@domain.com"
-      storage: "{{ acme_storage }}"
+      storage: "/etc/traefik-ssl/acme.json"
       dnsChallenge:
-        provider: {{ dns_challenge_provider }}
+        provider: {{ traefik_dns_provider }}
         delayBeforeCheck: 10

@@ -1,3 +1,15 @@
+# provider vars
+variable "proxmox_api_url" {
+}
+variable "proxmox_api_token_id" {
+}
+variable "proxmox_api_token_secret" {
+}
+variable "proxmox_host" {
+  default = "proxmox"
+}
+
+# resource vars
 variable "hostname" {
   default = "registry"
 }
@@ -13,12 +25,6 @@ variable "disk" {
 variable "storage" {
    default = "local-lvm"
 }
-variable "ssh_key" {
-   default = "none"
-}
-variable "proxmox_host" {
-    default = "proxmox"
-}
 variable "template_name" {
     default = "local:vztmpl/alpine-3.20.0.tar.zst"
 }
@@ -31,18 +37,21 @@ variable "bridge_name" {
 variable "vlan_num" {
     default = "-1"
 }
-variable "api_url" {
-   default = "none"
-}
-variable "token_secret" {
-   default = "none"
-}
-variable "token_id" {
-   default = "none"
+
+# secret vars
+variable "ansible_user" {
 }
 variable "ip_addr" {
-   default = "none"
 }
 variable "gw" {
-   default = "none"
+}
+variable "ipv6_addr" {
+}
+variable "ipv6_gw" {
+}
+variable "public_key_path" {
+}
+variable "private_key_path" {
+}
+variable "ssh_key" {
 }

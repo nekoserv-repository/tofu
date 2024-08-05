@@ -13,4 +13,4 @@
 - run examples:
   - tofu init
   - tofu destroy --auto-approve
-  - ansible-playbook -e @secrets.enc --ask-vault-pass ansible.yaml
+  - tofu apply --auto-approve

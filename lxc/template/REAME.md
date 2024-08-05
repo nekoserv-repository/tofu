@@ -1,7 +1,7 @@
 # how to use
-rm -rf plan .terraform* terraform.tf*
+rm -rf .terraform* terraform.tf*
 tofu init
-ansible-playbook -e @secrets.enc --ask-vault-pass ansible.yaml
+tofu apply --auto-approve
 
 ## how to upgrade
 sed -i -e "s/3.19/3.20/g" /etc/apk/repositories
@@ -26,5 +26,5 @@ cp /var/lib/vz/dump/vzdump-lxc-*.zst /var/lib/vz/template/cache/alpine-3.20.0.ta
 rm /var/lib/vz/dump/vzdump-lxc-*
 
 # stuff
-remove container: tofu destroy --auto-approve;
+destroy container: tofu destroy --auto-approve;
 update base image : change template_name in vars.tf

@@ -35,6 +35,7 @@ terraform.rc
 
 # Secrets
 secrets.enc
+credentials.auto.tfvars
 
 # Plans
 plan

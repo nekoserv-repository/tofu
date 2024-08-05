@@ -1,41 +1,8 @@
 ---
-- name: bootstrap to {{ my_host }}
-  hosts: localhost
-  gather_facts: no
-
-  tasks:
-    - name: add target host
-      ansible.builtin.add_host:
-        hostname: "{{ my_host }}"
-        ansible_ssh_host: "{{ my_host }}"
-
 - name: install-traefik
   hosts: all
   gather_facts: no
-  vars:
-    ansible_user: root
-
   tasks:
-    - name: generate tfvars
-      ansible.builtin.raw: echo "{{ tf_vars }}" > .auto.tfvars
-      delegate_to: localhost
-
-    - name: tofu plan
-      ansible.builtin.raw: tofu plan -out 'plan'
-      delegate_to: localhost
-      register: tofu_plan
-      changed_when: "'no changes' not in tofu_plan.stdout"
-
-    - name: tofu apply plan
-      ansible.builtin.raw: tofu apply plan
-      delegate_to: localhost
-      register: tofu_apply
-      changed_when: "'1 added' in tofu_apply.stdout"
-
-    - name: remove tfvars
-      ansible.builtin.raw: rm -f .auto.tfvars
-      delegate_to: localhost
-
     - name: waiting for {{ inventory_hostname }} to be ready
       wait_for:
         host: "{{ inventory_hostname }}"
@@ -146,7 +113,7 @@
       ansible.builtin.raw: sed -i -e '/^export /d' /etc/conf.d/traefik
 
     - name: pushing new env variables
-      ansible.builtin.raw: echo -e "{{ env_vars }}" >> /etc/conf.d/traefik
+      ansible.builtin.raw: echo -e "{{ traefik_env_vars }}" >> /etc/conf.d/traefik
 
     - name: update traefik permissions
       ansible.builtin.raw: chmod 0600 /etc/conf.d/traefik
