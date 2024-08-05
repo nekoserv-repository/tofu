@@ -34,71 +34,65 @@
         - name: restarting OpenSSH
           ansible.builtin.raw: systemctl restart ssh.service
 
-#        - name: set root SSH key
-#          ansible.builtin.raw: cp /home/alpine/.ssh/authorized_keys /root/.ssh/authorized_keys
+        - name: set root SSH key
+          ansible.builtin.raw: cp /home/debian/.ssh/authorized_keys /root/.ssh/authorized_keys
 
-        - name: update index of available package(s)
-          ansible.builtin.raw: apt-get update
 
-        - name: check package(s) upgrade(s)
-          ansible.builtin.raw: apt-get -s upgrade | grep '^Inst ' | cat
-          changed_when: upd_output.stdout.splitlines()|length > 0
-          register: upd_output
+- name: root operations
+  hosts: all
+  vars:
+    ansible_user: root
+  gather_facts: no
+  tasks:
+    - name: remove debian user
+      ansible.builtin.raw: |
+        deluser debian;
+        rm -rf /home/*;
 
-        - name: check dist-upgrade(s)
-          ansible.builtin.raw: apt-get -s dist-upgrade | grep '^Inst ' | cat
-          changed_when: upgd_output.stdout.splitlines()|length > 0
-          register: upgd_output
+    - name: update index of available package(s)
+      ansible.builtin.raw: apt-get update
 
-        - name: package(s) to be updated
-          ansible.builtin.debug:
-            msg: "{{ upd_output.stdout_lines }}"
-          changed_when: false
-          when: upd_output.stdout.splitlines()|length > 0
+    - name: check package(s) upgrade(s)
+      ansible.builtin.raw: apt-get -s upgrade | grep '^Inst ' | cat
+      changed_when: upd_output.stdout.splitlines()|length > 0
+      register: upd_output
 
-        - name: package(s) to be upgraded
-          ansible.builtin.debug:
-            msg: "{{ upgd_output.stdout_lines }}"
-          changed_when: false
-          when: upgd_output.stdout.splitlines()|length > 0
+    - name: check dist-upgrade(s)
+      ansible.builtin.raw: apt-get -s dist-upgrade | grep '^Inst ' | cat
+      changed_when: upgd_output.stdout.splitlines()|length > 0
+      register: upgd_output
 
-        - name: upgrading
-          ansible.builtin.raw: apt upgrade
-          when: (upd_output.stdout.splitlines()|length > 0) or
-                (upgd_output.stdout.splitlines()|length > 0)
+    - name: package(s) to be updated
+      ansible.builtin.debug:
+        msg: "{{ upd_output.stdout_lines }}"
+      changed_when: false
+      when: upd_output.stdout.splitlines()|length > 0
 
-        - name: reboot check for apps
-          ansible.builtin.raw: lsof / 2>&1 | awk '$10=="(deleted)"' | cat
-          changed_when: false
-          register: lsof_output
+    - name: package(s) to be upgraded
+      ansible.builtin.debug:
+        msg: "{{ upgd_output.stdout_lines }}"
+      changed_when: false
+      when: upgd_output.stdout.splitlines()|length > 0
 
-        - name: reboot check for new kernel
-          ansible.builtin.raw: readlink /vmlinuz | awk '!/'"$(uname -r)"'/'
-          changed_when: false
-          register: kernel_output
+    - name: upgrading
+      ansible.builtin.raw: apt upgrade -y
+      when: (upd_output.stdout.splitlines()|length > 0) or
+            (upgd_output.stdout.splitlines()|length > 0)
 
-        - name: reboot check for initrd update
-          ansible.builtin.raw: find /boot/initrd* -mmin -2
-          changed_when: false
-          register: initrd_output
+    - name: force reboot
+      ansible.builtin.raw: reboot
+      poll: 0
+      ignore_errors: yes
 
-        - name: rebooting {{ inventory_hostname }}
-          ansible.builtin.raw: reboot
-          poll: 0
-          ignore_errors: yes
-          when: (lsof_output.stdout.splitlines()|length > 0) or
-                (kernel_output.stdout.splitlines()|length > 0) or
-                (initrd_output.stdout.splitlines()|length > 0)
+    - name: waiting for {{ inventory_hostname }} to be ready
+      wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 22
+        state: started
+        delay: 5
+        timeout: 60
+      delegate_to: localhost
+      become: false
 
-        - name: waiting for {{ inventory_hostname }} to be ready
-          wait_for:
-            host: "{{ inventory_hostname }}"
-            port: 22
-            state: started
-            delay: 5
-            timeout: 60
-          delegate_to: localhost
-          become: false
-          when: (lsof_output.stdout.splitlines()|length > 0) or
-                (kernel_output.stdout.splitlines()|length > 0) or
-                (initrd_output.stdout.splitlines()|length > 0)
+    - name: install tools
+      ansible.builtin.raw: apt install -y htop

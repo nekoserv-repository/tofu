@@ -24,17 +24,15 @@ provider "proxmox" {
 }
 
 
-resource "proxmox_virtual_environment_file" "cloud_image" {
-  count        = 1
-  content_type = "iso"
-  datastore_id = "local"
-  node_name    = var.proxmox_host
-
-  source_file {
-    path      = "debian-12-genericcloud-amd64.qcow2"
-    file_name = "debian-12-genericcloud-amd64.img"
-    checksum  = "ef9270aee834900d5195b257d7580dc96483a298bf54e5c0555385dc23036e90"
-  }
+resource "proxmox_virtual_environment_download_file" "cloud_image" {
+  count              = "1"
+  content_type       = "iso"
+  datastore_id       = "local"
+  node_name          = var.proxmox_host
+  url                = var.cloud_url
+  file_name          = var.cloud_file_name
+  checksum           = var.cloud_checksum
+  checksum_algorithm = "sha512"
 }
 
 
@@ -48,12 +46,6 @@ resource "proxmox_virtual_environment_vm" "vm" {
 
   agent {
     enabled = false
-  }
-
-  startup {
-    order      = "1"
-    up_delay   = "30"
-    down_delay = "30"
   }
 
   cpu {
@@ -71,9 +63,11 @@ resource "proxmox_virtual_environment_vm" "vm" {
 
   disk {
     datastore_id = var.storage
-    file_id      = proxmox_virtual_environment_file.cloud_image[count.index].id
+    file_id      = proxmox_virtual_environment_download_file.cloud_image[count.index].id
     interface    = "scsi0"
-    size         = 12
+    discard      = "on"
+    ssd          = true
+    size         = var.disk
   }
 
   # cloud image expects a serial port to be present
@@ -92,6 +86,29 @@ resource "proxmox_virtual_environment_vm" "vm" {
     user_account {
       keys     = [ var.ssh_key ]
     }
+    user_data_file_id = proxmox_virtual_environment_file.cloud_config[count.index].id
+  }
+}
+
+
+resource "proxmox_virtual_environment_file" "cloud_config" {
+  count        = 1
+  content_type = "snippets"
+  datastore_id = "local"
+  node_name    = var.proxmox_host
+
+  source_raw {
+    data = <<EOF
+#cloud-config
+users:
+ - default
+ - name: debian
+   shell: /bin/bash
+   ssh-authorized-keys:
+     - ${trimspace(var.ssh_key)}
+disable_root: false
+EOF
+    file_name = "cloud-config-debian-0${count.index}.yaml"
   }
 }
 
