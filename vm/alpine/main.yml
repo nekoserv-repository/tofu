@@ -64,8 +64,8 @@
     ansible_user: root
   gather_facts: no
   tasks:
-    - name: set timezone
-      ansible.builtin.raw: ln -s /usr/share/zoneinfo/{{ cfg_timezone }} /etc/localtime
+    - name: remove alpine user
+      ansible.builtin.raw: deluser --remove-home alpine
 
     - name: add IPv6 quotes and brackets
       ansible.builtin.raw:  echo {{ inventory_hostname }} | sed '0,/:/s/\(.*:.*\)/\1/'
