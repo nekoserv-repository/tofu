@@ -82,9 +82,8 @@
         echo -e "net.ipv6.conf.all.accept_ra = 0\nnet.ipv6.conf.default.accept_ra = 0\n" >> /etc/sysctl.conf;
         sysctl -p;
 
-    - name: disable IPv4 DNS stuff
-      ansible.builtin.raw: |
-        sed -i -e '/dns/ s/^#*/#/' /etc/network/interfaces
+    - name: remove DNS config in /etc/network/interfaces
+      ansible.builtin.raw: sed -i -e '/dns-/d' /etc/network/interfaces
 
     - name: add IPv4
       ansible.builtin.raw: |
