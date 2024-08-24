@@ -11,10 +11,10 @@ variable "proxmox_node" {
 
 # resource vars
 variable "cores" {
-   default = "2"
+   default = "1"
 }
 variable "memory" {
-   default = "2048"
+   default = "1024"
 }
 variable "disk" {
    default = "2"
