@@ -1,11 +1,11 @@
 # provider vars
-variable "proxmox_api_host" {
+variable "proxmox_api_endpoint" {
 }
-variable "proxmox_api_user" {
+variable "proxmox_api_token" {
 }
-variable "proxmox_api_pass" {
+variable "proxmox_ssh_user" {
 }
-variable "proxmox_host" {
+variable "proxmox_node" {
   default = "proxmox"
 }
 

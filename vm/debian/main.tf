@@ -9,17 +9,13 @@ terraform {
 
 
 provider "proxmox" {
-  endpoint = "https://${var.proxmox_api_host}:8006/api2/json"
-  username = var.proxmox_api_user
-  password = var.proxmox_api_pass
-  insecure = true
+  endpoint  = var.proxmox_api_endpoint
+  api_token = var.proxmox_api_token
+  insecure  = true
   tmp_dir  = "/var/tmp"
   ssh {
-    agent = true
-    node {
-      name    = "proxmox"
-      address = var.proxmox_api_host
-    }
+    agent    = true
+    username = var.proxmox_ssh_user
   }
 }
 
@@ -28,7 +24,7 @@ resource "proxmox_virtual_environment_download_file" "cloud_image" {
   count              = "1"
   content_type       = "iso"
   datastore_id       = "local"
-  node_name          = var.proxmox_host
+  node_name          = var.proxmox_node
   url                = var.cloud_url
   file_name          = var.cloud_file_name
   checksum           = var.cloud_checksum
@@ -39,7 +35,7 @@ resource "proxmox_virtual_environment_download_file" "cloud_image" {
 resource "proxmox_virtual_environment_vm" "vm" {
   count         = 1
   name          = "debian-12-vm"
-  node_name     = var.proxmox_host
+  node_name     = var.proxmox_node
   vm_id         = count.index + 250
   tablet_device = "false"
   boot_order    = [ "scsi0" ]
@@ -95,7 +91,7 @@ resource "proxmox_virtual_environment_file" "cloud_config" {
   count        = 1
   content_type = "snippets"
   datastore_id = "local"
-  node_name    = var.proxmox_host
+  node_name    = var.proxmox_node
 
   source_raw {
     data = <<EOF
