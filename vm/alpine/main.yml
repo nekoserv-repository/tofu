@@ -212,7 +212,7 @@
       ansible.builtin.raw: while [ $(kubectl get po -n kube-system | awk '/helm-install/ && /Completed/' | wc -l) != 2 ]; do sleep 1; done
 
     - name: k3s - wait for all other pods to be ready
-      ansible.builtin.raw: while [ $(kubectl get po -n kube-system | grep Running | wc -l) != 5 ]; do sleep 1; done
+      ansible.builtin.raw: while [ $(kubectl get po -n kube-system | sed -n 's/\([0-9]\+\)\/\1 \+Running//p' | wc -l) != 5 ]; do sleep 1; done
 
     - name: traefik - disable websecure port
       block:
@@ -249,7 +249,7 @@
       ansible.builtin.raw: rc-service k3s restart
 
     - name: k3s - wait for metrics to be ready
-      ansible.builtin.raw: while [ $(kubectl get po -n kube-system | awk '/metrics/ && /Running/' | wc -l) != 1 ]; do sleep 1; done
+      ansible.builtin.raw: while [ $(kubectl get po -n kube-system | awk '/^metrics/' | sed -n 's/\([0-9]\+\)\/\1 \+Running//p' | wc -l) != 1 ]; do sleep 1; done
 
     - name: remove tools
       ansible.builtin.raw: apk del --purge curl sed
