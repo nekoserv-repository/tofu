@@ -17,7 +17,7 @@ variable "memory" {
    default = "4096"
 }
 variable "disk" {
-   default = "12"
+   default = "16"
 }
 variable "storage" {
    default = "local-lvm"
