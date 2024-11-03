@@ -26,15 +26,16 @@ variable "bridge_name" {
     default = "vmbr0"
 }
 
+
 # cloud vars
 variable "cloud_url" {
-    default = "https://dl-cdn.alpinelinux.org/alpine/v3.20/releases/cloud/nocloud_alpine-3.20.1-x86_64-bios-cloudinit-r0.qcow2"
+    default = "https://dl-cdn.alpinelinux.org/alpine/v3.20/releases/cloud/nocloud_alpine-3.20.3-x86_64-bios-cloudinit-r0.qcow2"
 }
 variable "cloud_file_name" {
-    default = "nocloud_alpine-3.20.1-x86_64-bios-cloudinit-r0.img"
+    default = "nocloud_alpine-3.20.3-x86_64-bios-cloudinit-r0.img"
 }
 variable "cloud_checksum" {
-    default = "63288e5c1ffa499cfec5bb7f1aac73031aa21a3192faf0f511f8cf579a1edd8761e66e3a9f29bb7b9e9691e3c5108c387629d3c3da8cd24b62ff13bab49190f7"
+    default = "73bd1fdfd9a0b4db250c923630a415a054ed1ae869e6ff4a121b49d28b2fb3a2a21a948bd0c121e5640f3f16c68cfb574b72fd6a4395a788a71f7f279c1c52e3"
 }
 
 # secret vars
