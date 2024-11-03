@@ -16,6 +16,8 @@ entryPoints:
     address: ":{{ traefik_dst_port }}"
     http3: {}
     http:
+      middlewares:
+        - rps@file
       tls:
         certResolver: default-ssl
         domains:
@@ -58,7 +60,6 @@ http:
       service: "ci-svc"
       entryPoints:
         - "https"
-
   services:
     git-svc:
       loadBalancer:
@@ -72,7 +73,11 @@ http:
       loadBalancer:
         servers:
           - url: "{{ traefik_host_ci }}"
-
+  middlewares:
+    rps:
+      rateLimit:
+        average: 10
+        burst: 25
 
 ## https mode : let's encrypt
 certificatesResolvers:
