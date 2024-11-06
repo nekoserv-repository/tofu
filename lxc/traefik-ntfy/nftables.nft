@@ -1,6 +1,7 @@
 flush ruleset
 
-define iface = "eth0"
+define iface	= "eth0"
+define port	= "443"
 
 table ip filter {
 	chain input {
@@ -27,12 +28,27 @@ table ip6 filter {
 		iif lo accept;
 		iif != lo ip6 daddr ::1/128 drop;
 		iif $iface ip6 nexthdr icmpv6 icmpv6 type { nd-neighbor-solicit, nd-router-advert, nd-neighbor-advert } accept;
-		iif $iface meta l4proto {tcp, udp} th dport 443 accept;
+		iif $iface meta l4proto {tcp, udp} th dport $port accept;
 	}
 	chain forward {
 		type filter hook forward priority 0; policy drop;
 	}
 	chain output {
 		type filter hook output priority 0; policy accept;
+	}
+}
+
+table inet dev {
+	set blackhole_ipv6 {
+		type ipv6_addr;
+		flags dynamic, timeout;
+		size 65536;
+	}
+	chain input {
+		type filter hook input priority filter; policy accept;
+		iif $iface meta l4proto {tcp, udp} th dport $port ct state new \
+			meter flood_ipv6 size 128000 { ip6 saddr and ffff:ffff:ffff:ffff:: timeout 10s limit rate over 10/second } \
+			add @blackhole_ipv6 { ip6 saddr and ffff:ffff:ffff:ffff:: timeout 1m };
+		ip6 saddr and ffff:ffff:ffff:ffff:: @blackhole_ipv6 counter drop;
 	}
 }
