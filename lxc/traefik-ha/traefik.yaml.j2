@@ -16,8 +16,6 @@ entryPoints:
     address: ":{{ traefik_dst_port }}"
     http3: {}
     http:
-      middlewares:
-        - rps@file
       tls:
         certResolver: default-ssl
         domains:
@@ -50,11 +48,6 @@ http:
       loadBalancer:
         servers:
           - url: "{{ traefik_host_ha }}"
-  middlewares:
-    rps:
-      rateLimit:
-        average: 25
-        burst: 50
 
 ## https mode : let's encrypt
 certificatesResolvers:
