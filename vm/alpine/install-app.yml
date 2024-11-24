@@ -1,0 +1,12 @@
+- name: register some facts
+  set_fact:
+    name: "{{ item | basename }}"
+    dir: "{{ item }}"
+    values_file: "{{ item }}/values.yaml"
+
+- name: building configmap
+  set_fact:
+    str: "{{  hostvars[inventory_hostname][name] | to_json }}"
+
+- name: run helm
+  ansible.builtin.raw: "helm install {{ name }} {{ dir }} --wait --set-json='configMap={{ str }}'"
