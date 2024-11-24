@@ -221,7 +221,7 @@
       block:
         - name: send traefik-config.yaml
           ansible.builtin.copy:
-            src: "traefik-config.yaml"
+            src: "config-files/traefik-config.yaml"
             dest: "/var/lib/rancher/k3s/server/manifests/traefik-config.yaml"
             mode: 0600
             owner: root
@@ -244,7 +244,7 @@
           ansible.builtin.raw: kubectl apply -f /root/network-policies/block-ipv4.yaml
 
     - name: k3s - set garbage collection limits
-      ansible.builtin.raw: scp config.yaml root@{{ hostname }}:/etc/rancher/k3s/config.yaml
+      ansible.builtin.raw: scp config-files/k3s-config.yaml root@{{ hostname }}:/etc/rancher/k3s/config.yaml
       delegate_to: localhost
       changed_when: false
 
