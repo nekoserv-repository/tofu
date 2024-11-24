@@ -1,0 +1,31 @@
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: reg-ui-ingress-stripprefix
+  namespace: registry-ui
+spec:
+  stripPrefix:
+    prefixes:
+      - /ui
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: registry-ui-ingress
+  namespace: registry-ui
+  annotations:
+    spec.ingressClassName: traefik
+    traefik.ingress.kubernetes.io/router.middlewares: registry-ui-reg-ui-ingress-stripprefix@kubernetescrd
+spec:
+  rules:
+    - host: {{ .Values.configMap.host }}
+      http:
+        paths:
+          - path: /ui
+            pathType: Prefix
+            backend:
+              service:
+                name: registry-ui
+                port:
+                  number: 80
