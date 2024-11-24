@@ -109,9 +109,6 @@
     - name: update index of available package(s)
       ansible.builtin.raw: apk update
 
-    - name: prevent updating kernel
-      ansible.builtin.raw: v=$(apk info -v | awk '/linux-virt/ {sub("linux-virt-",""); print($1)}'); echo apk add "linux-virt<=$v"
-
     - name: check package(s) update(s)
       ansible.builtin.raw: apk version -l '<'
       changed_when: pkgs_output.stdout.splitlines()|length > 1

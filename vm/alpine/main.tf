@@ -121,7 +121,7 @@ write_files:
       Defaults !requiretty
 
 package_update: true
-package_upgrade: false
+package_upgrade: true
 packages:
   - qemu-guest-agent
 
