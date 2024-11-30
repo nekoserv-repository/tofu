@@ -254,15 +254,15 @@
     - name: remove tools
       ansible.builtin.raw: apk del --purge curl sed
 
-    - name: install apps
+    - name: process local charts
       delegate_to: localhost
       block:
-        - name: discover all applications
+        - name: discover all local charts
           find:
-            paths: apps
+            paths: charts/local/
             file_type: directory
-          register: apps_list
+          register: local_chart_list
 
-        - name: install all applications
-          include_tasks: install-app.yml
-          loop: "{{ apps_list.files | map(attribute='path') | list | sort }}"
+        - name: install local charts
+          include_tasks: install-local-chart.yml
+          loop: "{{ local_chart_list.files | map(attribute='path') | list | sort }}"
