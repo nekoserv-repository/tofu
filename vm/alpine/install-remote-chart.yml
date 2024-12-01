@@ -1,0 +1,19 @@
+- name: read config.yaml file
+  include_vars:
+    file: "{{ item }}/config.yaml"
+
+- name: register some facts
+  set_fact:
+    name: "{{ item | basename }}"
+    post_install_file: "{{ item }}/post-install.sh"
+    values_file: "{{ item }}/values.yaml"
+
+- name: "{{ name }} - building configmap"
+  set_fact:
+    str: "{{ hostvars[inventory_hostname][name] | to_json }}"
+
+- name: "{{ name }} - run helm"
+  ansible.builtin.raw: "helm install {{ name }} {{ url }} --create-namespace --namespace {{ namespace }} --set-json='configMap={{ str }}' --values {{ values_file }} --wait"
+
+- name: "{{ name }} - post-install script"
+  ansible.builtin.raw: "sh -c '[ -f {{ post_install_file }} ] && sh {{ post_install_file }} || echo'"

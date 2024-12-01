@@ -254,6 +254,19 @@
     - name: remove tools
       ansible.builtin.raw: apk del --purge curl sed
 
+    - name: process remote charts
+      delegate_to: localhost
+      block:
+        - name: discover all remote charts
+          find:
+            paths: charts/remote/
+            file_type: directory
+          register: remote_chart_list
+
+        - name: install remote charts
+          include_tasks: install-remote-chart.yml
+          loop: "{{ remote_chart_list.files | map(attribute='path') | list | sort }}"
+
     - name: process local charts
       delegate_to: localhost
       block:
