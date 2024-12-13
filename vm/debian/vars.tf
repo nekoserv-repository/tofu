@@ -28,13 +28,13 @@ variable "bridge_name" {
 
 # cloud vars
 variable "cloud_url" {
-    default = "https://cloud.debian.org/images/cloud/bookworm/20240717-1811/debian-12-genericcloud-amd64-20240717-1811.qcow2"
+    default = "https://cloud.debian.org/images/cloud/bookworm/20241201-1948/debian-12-genericcloud-amd64-20241201-1948.qcow2"
 }
 variable "cloud_file_name" {
     default = "debian-12-genericcloud-amd64.img"
 }
 variable "cloud_checksum" {
-    default = "0f0075d53749dba4c9825e606899360626bb20ac6bab3dbdeff40041b051d203eb1a56e68d377c9fac0187faa0aea77fd543ef4a883fff2304eac252cce01b44"
+    default = "340cdafca262582e2ec013f2118a7daa9003436559a3e1cff637af0fc05d4c3755d43e15470bb40d7dd4430d355b44d098283fc4c7c6f640167667479eeeb0e0"
 }
 
 # secret vars
