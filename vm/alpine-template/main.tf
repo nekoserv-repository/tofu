@@ -34,7 +34,7 @@ resource "proxmox_virtual_environment_download_file" "cloud_image" {
 
 resource "proxmox_virtual_environment_vm" "vm" {
   count         = 1
-  name          = "test-0${count.index + 1}"
+  name          = "test-0${count.index+1}"
 
   node_name     = var.proxmox_node
   vm_id         = count.index + 250
@@ -93,7 +93,7 @@ resource "proxmox_virtual_environment_file" "cloud_config" {
   source_raw {
     data = <<EOF
 #cloud-config
-hostname: test-0${count.index + 1}
+hostname: test-0${count.index+1}
 
 manage_resolv_conf: true
 resolv_conf:
@@ -124,7 +124,7 @@ runcmd:
   - rc-service qemu-guest-agent start
 
 EOF
-    file_name = "cloud-config-test-0${count.index}.yaml"
+    file_name = "cloud-config-test-0${count.index+1}.yaml"
   }
 }
 
@@ -137,7 +137,6 @@ resource "null_resource" "ansible" {
     always_run = "${timestamp()}"
   }
   provisioner "local-exec" {
-    #command = "ANSIBLE_FORCE_COLOR=True ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u ${var.ansible_user} --inventory=\"${local.ip_addr},\" -l ${local.ip_addr} --private-key ${var.private_key_path} -e 'pub_key=${var.public_key_path}' --ssh-extra-args '-o UserKnownHostsFile=/dev/null' -e @secrets.enc main.yml"
     command = "ANSIBLE_FORCE_COLOR=True ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook --inventory=\"${local.ip_addr},\" -l ${local.ip_addr} --private-key ${var.private_key_path} -e 'pub_key=${var.public_key_path}' --ssh-extra-args '-o UserKnownHostsFile=/dev/null' main.yml"
   }
   depends_on = [ proxmox_virtual_environment_vm.vm ]
