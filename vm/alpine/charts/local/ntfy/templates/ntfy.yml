@@ -30,13 +30,16 @@ spec:
         - containerPort: 80
           name: http
         volumeMounts:
-        - name: config
-          mountPath: "/etc/ntfy"
+        - name: config-volume
+          mountPath: "/etc/ntfy/server.yml"
+          subPath: server.yml
           readOnly: true
+        - name: cache-volume
+          mountPath: /var/cache/ntfy
       volumes:
-        - name: config
+        - name: config-volume
           configMap:
-            name: ntfy
+            name: ntfy-config
         - name: cache-volume
           persistentVolumeClaim:
             claimName: ntfy-pvc
