@@ -34,7 +34,7 @@ resource "proxmox_virtual_environment_download_file" "cloud_image" {
 
 resource "proxmox_virtual_environment_vm" "vm" {
   count         = 1
-  name          = "k3s-0${count.index + 1}"
+  name          = "k3s-0${count.index+1}"
 
   node_name     = var.proxmox_node
   vm_id         = count.index + 150
@@ -99,7 +99,7 @@ resource "proxmox_virtual_environment_file" "cloud_config" {
   source_raw {
     data = <<EOF
 #cloud-config
-hostname: k3s-0${count.index + 1}
+hostname: k3s-0${count.index+1}
 
 manage_resolv_conf: true
 resolv_conf:
@@ -131,7 +131,7 @@ runcmd:
 
 EOF
     # Prevent files overwriting eachother by giving them unique names with the count.index
-    file_name = "cloud-config-k3s-0${count.index}.yaml"
+    file_name = "cloud-config-k3s-0${count.index+1}.yaml"
   }
 }
 
