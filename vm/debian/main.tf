@@ -104,7 +104,7 @@ users:
      - ${trimspace(var.ssh_key)}
 disable_root: false
 EOF
-    file_name = "cloud-config-debian-0${count.index}.yaml"
+    file_name = "cloud-config-debian-0${count.index+1}.yaml"
   }
 }
 
