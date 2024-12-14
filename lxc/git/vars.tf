@@ -26,7 +26,7 @@ variable "storage" {
    default = "local-lvm"
 }
 variable "template_name" {
-    default = "local:vztmpl/alpine-3.20.1.tar.zst"
+    default = "local:vztmpl/alpine-3.21.0.tar.zst"
 }
 variable "ethernet_name" {
     default = "eth0"
