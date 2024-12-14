@@ -176,7 +176,7 @@
           sed -i -e '2,/repo testing/d' ./gitolite/conf/gitolite.conf
           git -C ./gitolite/ -c user.name='ansible' -c user.email='ansible@local' commit -am "Removed : testing repository";
 
-          for repo in ansible docker tofu; do
+          for repo in ansible docker esp32 tofu; do
             echo "\nrepo $repo\n    RW+     =   git" >> ./gitolite/conf/gitolite.conf;
             git -C ./gitolite/ -c user.name='ansible' -c user.email='ansible@local' commit -am "Added : $repo repository";
           done
