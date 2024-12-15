@@ -64,6 +64,7 @@ resource "proxmox_virtual_environment_vm" "vm" {
     discard      = "on"
     ssd          = true
     size         = var.disk
+    cache        = "writethrough"
   }
 
   # cloud image expects a serial port to be present
