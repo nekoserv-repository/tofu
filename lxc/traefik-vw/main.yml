@@ -1,0 +1,134 @@
+---
+- name: install-traefik
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: waiting for {{ inventory_hostname }} to be ready
+      wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 22
+        state: started
+        delay: 5
+        timeout: 60
+      delegate_to: localhost
+
+    - name: remove previous SSH key
+      ansible.builtin.raw: ssh-keygen -f ~/.ssh/known_hosts -R {{ inventory_hostname }}
+      delegate_to: localhost
+      register: key_removal
+      changed_when: "'not found in' not in key_removal.stderr"
+
+    - name: allow new SSH key
+      ansible.builtin.raw: ssh-keyscan -H {{ inventory_hostname }} | grep ed25519 >> ~/.ssh/known_hosts
+      delegate_to: localhost
+
+    - name: disable SSH password authentication
+      ansible.builtin.raw: sed -i -e 's/^#PasswordAuthentication.*/PasswordAuthentication no/g' /etc/ssh/sshd_config
+
+    - name: restarting OpenSSH
+      ansible.builtin.raw: rc-service sshd restart
+
+    - name: disable router advertisements
+      ansible.builtin.raw: echo "        pre-up echo 0 > /proc/sys/net/ipv6/conf/eth0/accept_ra" >> /etc/network/interfaces
+
+    - name: networking restart
+      ansible.builtin.raw: rc-service networking restart
+
+    - name: update index of available package(s)
+      ansible.builtin.raw: apk update
+
+    - name: check package(s) update(s)
+      ansible.builtin.raw: apk version -l '<'
+      changed_when: pkgs_output.stdout.splitlines()|length > 1
+      failed_when: pkgs_output.stdout.splitlines()|length == 0
+      register: pkgs_output
+
+    - name: upgrading {{ pkgs_output.stdout.splitlines()|length - 1 }} package(s)
+      ansible.builtin.raw: apk upgrade
+      when: pkgs_output.stdout.splitlines()|length > 1
+
+    - name: check if reboot needed
+      ansible.builtin.raw: lsof / 2>&1 | awk '$3=="(deleted)"' | cat
+      register: lsof_output
+
+    - name: reboot
+      ansible.builtin.raw: reboot
+      poll: 0
+      ignore_errors: yes
+      when: lsof_output.stdout.splitlines()|length > 0
+
+    - name: waiting for {{ inventory_hostname }} to be ready
+      wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 22
+        state: started
+        delay: 5
+        timeout: 60
+      delegate_to: localhost
+      when: lsof_output.stdout.splitlines()|length > 0
+
+    - name: install traefik
+      ansible.builtin.raw: apk add traefik
+
+    - name: create acme directory
+      ansible.builtin.raw: mkdir -m 0700 /etc/traefik-ssl; chown traefik:traefik /etc/traefik-ssl;
+
+    - name: install firewall
+      ansible.builtin.raw: apk add nftables
+
+    - name: remove default firewall configuration
+      ansible.builtin.raw: rm -rf /etc/nftables*
+
+    - name: install python3 for templating
+      ansible.builtin.raw: apk add --no-cache python3
+
+    - name: send nftables.nft
+      ansible.builtin.copy:
+        src: "nftables.nft"
+        dest: "/etc/nftables.nft"
+        mode: 0600
+        owner: root
+        group: root
+
+    - name: generate traefik.yaml
+      ansible.builtin.template:
+        src: "traefik.yaml.j2"
+        dest: "/etc/traefik/traefik.yaml"
+        mode: 0644
+        owner: traefik
+        group: traefik
+
+    - name: generate acme.json
+      ansible.builtin.template:
+        src: "acme.json.j2"
+        dest: "/etc/traefik-ssl/acme.json"
+        mode: 0600
+        owner: traefik
+        group: traefik
+
+    - name: remove python3
+      ansible.builtin.raw: apk del python3
+
+    - name: remove previous env variables
+      ansible.builtin.raw: sed -i -e '/^export /d' /etc/conf.d/traefik
+
+    - name: pushing new env variables
+      ansible.builtin.raw: echo -e "{{ traefik_env_vars }}" >> /etc/conf.d/traefik
+
+    - name: update traefik permissions
+      ansible.builtin.raw: chmod 0600 /etc/conf.d/traefik
+
+    - name: restarting traefik
+      ansible.builtin.raw: rc-service traefik restart
+
+    - name: traefik on default runlevel
+      ansible.builtin.raw: rc-update add traefik default
+
+    - name: firewall stuff
+      block:
+
+        - name: start firewall
+          ansible.builtin.raw: rc-service nftables start
+
+        - name: enable firewall on boot
+          ansible.builtin.raw: rc-update add nftables boot
