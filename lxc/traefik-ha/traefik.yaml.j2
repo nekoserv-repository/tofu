@@ -41,8 +41,6 @@ http:
     ha-router:
       rule: "Host(`{{ acme_domain }}`) && PathPrefix(`/`)"
       service: "ha-svc"
-      entryPoints:
-        - "https"
   services:
     ha-svc:
       loadBalancer:

@@ -41,23 +41,15 @@ http:
     git-router:
       rule: "Host(`{{ acme_domain }}`) && PathPrefix(`/cgit`)"
       service: "git-svc"
-      entryPoints:
-        - "https"
     registry-router:
       rule: "Host(`{{ acme_domain }}`) && PathPrefix(`/v2`)"
       service: "registry-svc"
-      entryPoints:
-        - "https"
     registry-ui-router:
       rule: "Host(`{{ acme_domain }}`) && PathPrefix(`/ui`)"
       service: "ci-svc"
-      entryPoints:
-        - "https"
     ci-router:
       rule: "Host(`{{ acme_domain }}`) && PathPrefix(`/`)"
       service: "ci-svc"
-      entryPoints:
-        - "https"
   services:
     git-svc:
       loadBalancer:

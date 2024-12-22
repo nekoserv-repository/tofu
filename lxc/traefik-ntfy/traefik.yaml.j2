@@ -41,8 +41,6 @@ http:
     main-router:
       rule: "Host(`{{ acme_domain }}`) && PathPrefix(`/`)"
       service: "main-svc"
-      entryPoints:
-        - "https"
   services:
     main-svc:
       loadBalancer:
