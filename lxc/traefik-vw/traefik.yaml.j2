@@ -37,12 +37,19 @@ api:
 ping: {}
 
 http:
+  middlewares:
+    make-error-404:
+      replacePath:
+        path: "/admin-is-refused"
   routers:
+    admin-router:
+      rule: "Host(`vw.nekoserv.fr`) && PathPrefix(`/admin`)"
+      service: "main-svc"
+      middlewares:
+        - make-error-404
     main-router:
       rule: "Host(`{{ acme_domain }}`) && PathPrefix(`/`)"
       service: "main-svc"
-      entryPoints:
-        - "https"
   services:
     main-svc:
       loadBalancer:
