@@ -11,5 +11,5 @@
 - name: "{{ name }} - helm dependency update"
   ansible.builtin.raw: "helm dependency update {{ path }}"
 
-- name: "{{ name }} - run helm"
-  ansible.builtin.raw: "helm install {{ name }} {{ path }} --wait --set-json='configMap={{ str }}'"
+- name: "{{ name }} - helm install"
+  ansible.builtin.raw: "helm upgrade {{ name }} {{ path }} --install --set-json 'global={{ values }}' --wait"
