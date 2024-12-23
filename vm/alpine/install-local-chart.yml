@@ -1,12 +1,11 @@
-- name: register some facts
+- name: "{{ item | basename }} - set facts"
   set_fact:
     name: "{{ item | basename }}"
     path: "{{ item }}"
-    values_file: "{{ item }}/values.yaml"
 
-- name: "{{ name }} - building configmap"
+- name: "{{ name }} - build helm values"
   set_fact:
-    str: "{{  hostvars[inventory_hostname][name] | to_json }}"
+    values: "{{ hostvars[inventory_hostname][name] | to_json }}"
 
 - name: "{{ name }} - helm dependency update"
   ansible.builtin.raw: "helm dependency update {{ path }}"

@@ -27,10 +27,10 @@ spec:
             cpu: "100m"
         env:
         - name: DOMAIN
-          value: "https://{{ .Values.configMap.host }}"
-        {{ if .Values.configMap.enableAdmin }}
+          value: "https://{{ .Values.global.host }}"
+        {{ if .Values.global.enableAdmin }}
         - name: ADMIN_TOKEN
-          value: {{ .Values.configMap.adminToken }}
+          value: {{ .Values.global.adminToken }}
         {{ end}}
         ports:
         - containerPort: 80

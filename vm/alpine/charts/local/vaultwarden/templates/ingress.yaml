@@ -5,7 +5,7 @@ metadata:
   namespace: vaultwarden
 spec:
   rules:
-    - host: {{ .Values.configMap.host }}
+    - host: {{ .Values.global.host }}
       http:
         paths:
           - path: /

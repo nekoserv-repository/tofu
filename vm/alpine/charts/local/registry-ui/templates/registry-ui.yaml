@@ -47,9 +47,9 @@ spec:
         - name: SHOW_CONTENT_DIGEST
           value: 'true'
         - name: NGINX_PROXY_PASS_URL
-          value: {{ .Values.configMap.nginxProxyUrl }}
+          value: {{ .Values.global.nginxProxyUrl }}
         - name: NGINX_PROXY_HEADER_Authorization
-          value: {{ .Values.configMap.nginxHeaderAuth }}
+          value: {{ .Values.global.nginxHeaderAuth }}
         - name: SHOW_CATALOG_NB_TAGS
           value: 'true'
         - name: CATALOG_MIN_BRANCHES

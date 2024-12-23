@@ -6,7 +6,7 @@ metadata:
 data:
   server.yml: |
     # Template: https://github.com/binwiederhier/ntfy/blob/main/server/server.yml
-    base-url: https://{{ .Values.configMap.host }}
+    base-url: https://{{ .Values.global.host }}
     attachment-cache-dir: "/var/cache/ntfy/attachments"
     attachment-total-size-limit: "1G"
     attachment-file-size-limit: "15M"

@@ -19,7 +19,7 @@ metadata:
     traefik.ingress.kubernetes.io/router.middlewares: registry-ui-reg-ui-ingress-stripprefix@kubernetescrd
 spec:
   rules:
-    - host: {{ .Values.configMap.host }}
+    - host: {{ .Values.global.host }}
       http:
         paths:
           - path: /ui

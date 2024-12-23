@@ -31,7 +31,7 @@ spec:
             - /bin/sh
             - -c
             - |
-              git clone {{ .Values.configMap.gitRepo }} /data/docker
+              git clone {{ .Values.global.gitRepo }} /data/docker
               cat <<EOF > /data/docker/pvc.yaml
               spec:
                 accessModes:
@@ -66,6 +66,6 @@ spec:
               for d in /data/docker/*/; do
                 app=$(basename $d)
                 tag=$(date -u +'%Y.%m.%d')
-                tkn -n tekton pipeline start clone-build-push --prefix-name $app --param repo-url={{ .Values.configMap.gitRepo }} --param image-reference={{ .Values.configMap.dockerRegistry }}/$app --param tag=$tag --param context=$app --showlog -w name=shared-data,volumeClaimTemplateFile=/data/docker/pvc.yaml -w name=docker-credentials,secret=docker-credentials
+                tkn -n tekton pipeline start clone-build-push --prefix-name $app --param repo-url={{ .Values.global.gitRepo }} --param image-reference={{ .Values.global.dockerRegistry }}/$app --param tag=$tag --param context=$app --showlog -w name=shared-data,volumeClaimTemplateFile=/data/docker/pvc.yaml -w name=docker-credentials,secret=docker-credentials
                 sleep 3
               done
