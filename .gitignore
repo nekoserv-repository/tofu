@@ -40,3 +40,7 @@ credentials.auto.tfvars
 
 # Plans
 plan
+
+# Helm
+Chart.lock
+*.tgz
