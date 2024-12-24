@@ -1,0 +1,65 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-backup
+  namespace: {{ .Release.Name }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-backup
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-backup
+    spec:
+      containers:
+      - name: {{ .Release.Name }}-backup
+        image: ttionya/vaultwarden-backup
+        resources:
+          limits:
+            memory: "256Mi"
+            cpu: "100m"
+        env:
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-credentials
+              key: access-key-id
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-credentials
+              key: secret-access-key
+        - name: BACKUP_KEEP_DAYS
+          value: "{{ .Values.global.backup.keepDays }}"
+        - name: CRON
+          value: "{{ .Values.global.backup.cron }}"
+        - name: DATA_DIR
+          value: "/data"
+        - name: TIMEZONE
+          value: "{{ .Values.global.backup.timezone }}"
+        - name: RCLONE_GLOBAL_FLAG
+          value: "-vv"
+        - name: RCLONE_REMOTE_DIR
+          value: "{{ .Values.global.backup.remoteDir }}"
+        - name: ZIP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-credentials
+              key: zip-password
+
+        volumeMounts:
+        - name: config-volume
+          mountPath: "/config/rclone/rclone.conf"
+          subPath: rclone.conf
+          readOnly: true
+        - name: data-volume
+          mountPath: /data/
+      volumes:
+        - name: config-volume
+          configMap:
+            name: vw-backup-config
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: vaultwarden-pvc

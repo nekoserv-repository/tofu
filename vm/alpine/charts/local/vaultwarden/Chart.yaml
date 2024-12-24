@@ -1,4 +1,9 @@
 apiVersion: v2
 name: vaultwarden
 version: 0.1.0
-appVersion: "1.0"
+appVersion: 1.0
+
+dependencies:
+- name: backup
+  repository: file://./charts/backup/
+  version: 0.x.x

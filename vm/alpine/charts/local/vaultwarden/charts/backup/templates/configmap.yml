@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vw-backup-config
+  namespace: {{ .Release.Name }}
+data:
+  rclone.conf: |
+    [BitwardenBackup]
+    type = s3
+    provider = AWS
+    env_auth = true
+    region = {{ .Values.global.backup.conf.region }}
+    location_constraint = {{ .Values.global.backup.conf.region }}
+    acl = private
+    storage_class = {{ .Values.global.backup.conf.storageClass }}
+    bucket = {{ .Values.global.backup.conf.bucket }}
+    no_check_bucket = true
