@@ -1,0 +1,25 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    # access logs in stdout
+    logs:
+      access:
+        enabled: false
+
+    # use port 80
+    ports:
+      web:
+        exposedPort: 80
+        # trust X-Forwarded-* from the ip ranges
+        forwardedHeaders:
+          trustedIPs:
+            - {{ fh_ip_range }}
+
+    # preserves the client source IP and avoids a second hop for LoadBalancer and NodePort type Services, but risks potentially imbalanced traffic spreading.
+    service:
+      spec:
+        externalTrafficPolicy: Local

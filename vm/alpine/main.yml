@@ -268,9 +268,10 @@
 
         - name: traefik - disable websecure port
           block:
-            - name: send traefik-config.yaml
-              ansible.builtin.copy:
-                src: "config-files/traefik-config.yaml"
+
+            - name: generate traefik-config.yaml
+              ansible.builtin.template:
+                src: "config-files/traefik-config.yaml.j2"
                 dest: "/var/lib/rancher/k3s/server/manifests/traefik-config.yaml"
                 mode: 0600
                 owner: root
