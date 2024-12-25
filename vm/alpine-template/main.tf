@@ -37,7 +37,7 @@ resource "proxmox_virtual_environment_vm" "vm" {
   name          = "test-0${count.index+1}"
 
   node_name     = var.proxmox_node
-  vm_id         = count.index + 250
+  vm_id         = count.index + 249
   tablet_device = "false"
   boot_order    = [ "scsi0" ]
 
