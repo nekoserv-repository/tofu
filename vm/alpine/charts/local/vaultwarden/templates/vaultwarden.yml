@@ -24,7 +24,10 @@ spec:
         image: vaultwarden/server
         resources:
           limits:
-            memory: "512Mi"
+            memory: "256Mi"
+            cpu: "250m"
+          requests:
+            memory: "128Mi"
             cpu: "100m"
         env:
         - name: DOMAIN
