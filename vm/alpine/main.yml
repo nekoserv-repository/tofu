@@ -1,62 +1,75 @@
 ---
-- name: init. vm provisioning
+- name: init. SSH connection
   hosts: all
+  gather_facts: no
+  tasks:
+    - name: wait for SSH and allow keys
+      delegate_to: localhost
+      block:
+        - name: waiting for {{ inventory_hostname }} to be ready
+          wait_for:
+            host: "{{ inventory_hostname }}"
+            port: 22
+            state: started
+            timeout: 60
+
+        - name: remove previous SSH key
+          ansible.builtin.raw: ssh-keygen -f ~/.ssh/known_hosts -R {{ inventory_hostname }}
+          register: key_removal
+          changed_when: "'not found in' not in key_removal.stderr"
+
+        - name: allow new SSH key
+          ansible.builtin.raw: ssh-keyscan -H {{ inventory_hostname }} | grep ed25519 >> ~/.ssh/known_hosts
+
+
+- name: ensure cloud init is finished and alpine user removed
+  hosts: all
+  gather_facts: no
   vars:
     ansible_user: alpine
     ansible_become_method: doas
-  gather_facts: no
   tasks:
-    - name: waiting for {{ inventory_hostname }} to be ready
-      wait_for:
-        host: "{{ inventory_hostname }}"
-        port: 22
-        state: started
-        delay: 5
-        timeout: 60
-      delegate_to: localhost
+    - name: check alpine user presence
+      ansible.builtin.command: whoami
+      ignore_unreachable: true
+      register: alpine_user_present
 
-    - name: remove previous SSH key
-      ansible.builtin.raw: ssh-keygen -f ~/.ssh/known_hosts -R {{ inventory_hostname }}
-      delegate_to: localhost
-      register: key_removal
-      changed_when: "'not found in' not in key_removal.stderr"
-
-    - name: allow new SSH key
-      ansible.builtin.raw: ssh-keyscan -H {{ inventory_hostname }} | grep ed25519 >> ~/.ssh/known_hosts
-      delegate_to: localhost
-
-    - name: root operations
-      become: true
+    - name: init. vm provisioning
+      when: alpine_user_present.rc is defined
       block:
-        - name: gather all facts of cloud init
-          community.general.cloud_init_data_facts:
-          register: result
+        - name: root operations
+          become: true
+          block:
+            - name: gather all facts of cloud init
+              community.general.cloud_init_data_facts:
+              register: result
 
-        - name: wait for cloud init to finish
-          community.general.cloud_init_data_facts:
-            filter: status
-          register: res
-          until: "res.cloud_init_data_facts.status.v1.stage is defined and not res.cloud_init_data_facts.status.v1.stage"
-          retries: 10
-          delay: 5
+            - name: wait for cloud init to finish
+              community.general.cloud_init_data_facts:
+                filter: status
+              register: res
+              until: "res.cloud_init_data_facts.status.v1.stage is defined and not res.cloud_init_data_facts.status.v1.stage"
+              retries: 10
+              delay: 5
 
-        - name: disable SSH password authentication
-          ansible.builtin.raw: sed -i -e 's/^#PasswordAuthentication.*/PasswordAuthentication no/g' /etc/ssh/sshd_config
+            - name: disable SSH password authentication
+              ansible.builtin.raw: sed -i -e 's/^#PasswordAuthentication.*/PasswordAuthentication no/g' /etc/ssh/sshd_config
 
-        - name: restarting OpenSSH
-          ansible.builtin.raw: rc-service sshd restart
+            - name: restarting OpenSSH
+              ansible.builtin.raw: rc-service sshd restart
 
-        - name: unlock root account
-          ansible.builtin.raw: usermod -U root
+            - name: unlock root account
+              ansible.builtin.raw: usermod -U root
 
-        - name: set root SSH key
-          ansible.builtin.raw: cp /home/alpine/.ssh/authorized_keys /root/.ssh/authorized_keys
+            - name: set root SSH key
+              ansible.builtin.raw: cp /home/alpine/.ssh/authorized_keys /root/.ssh/authorized_keys
 
-        - name: remove doas message
-          ansible.builtin.raw: sed -i -e '/doas/,+1d' /etc/motd
+            - name: remove doas message
+              ansible.builtin.raw: sed -i -e '/doas/,+1d' /etc/motd
 
-        - name: remove doas
-          ansible.builtin.raw: apk del --purge doas
+            - name: remove doas
+              ansible.builtin.raw: apk del --purge doas
+
 
 - name: root operations
   hosts: all
@@ -65,25 +78,41 @@
   gather_facts: no
   tasks:
     - name: remove alpine user
-      ansible.builtin.raw: deluser --remove-home alpine
+      ansible.builtin.raw: deluser --remove-home alpine || true
+      register: remove_alpine_user
+
+    - name: check if first run
+      set_fact:
+        first_run: "{{ 'unknown user' not in remove_alpine_user.stdout }}"
 
     - name: add IPv6 quotes and brackets
-      ansible.builtin.raw:  echo {{ inventory_hostname }} | sed '0,/:/s/\(.*:.*\)/\1/'
+      ansible.builtin.raw: echo {{ inventory_hostname }} | sed '0,/:/s/\(.*:.*\)/\1/'
       delegate_to: localhost
       register: ip_output
 
     - name: set hostname fact
       set_fact:
-          hostname: "{{ ip_output.stdout.splitlines() }}"
+        hostname: "{{ ip_output.stdout.splitlines() }}"
+
+    - name: check router advertisements precence
+      ansible.builtin.raw: grep 'pre-up' /etc/network/interfaces | cat
+      register: is_ra_present
+      changed_when: false
 
     - name: disable router advertisements
       ansible.builtin.raw: |
         echo "    pre-up echo 0 > /proc/sys/net/ipv6/conf/eth0/accept_ra" >> /etc/network/interfaces;
         echo -e "net.ipv6.conf.all.accept_ra = 0\nnet.ipv6.conf.default.accept_ra = 0\n" >> /etc/sysctl.conf;
         sysctl -p;
+      when: is_ra_present.stdout.splitlines()|length == 0
 
     - name: remove DNS config in /etc/network/interfaces
       ansible.builtin.raw: sed -i -e '/dns-/d' /etc/network/interfaces
+
+    - name: check IPv4 presence
+      ansible.builtin.raw: grep 'iface eth0 inet static' /etc/network/interfaces | cat
+      register: is_ipv4_present
+      changed_when: false
 
     - name: add IPv4
       ansible.builtin.raw: |
@@ -91,8 +120,15 @@
         echo "    address {{ host_ipv4 }}" >> /etc/network/interfaces;
         echo "    netmask {{ host_ipv4_mask }}" >> /etc/network/interfaces;
         echo "    gateway {{ host_ipv4_gw }}" >> /etc/network/interfaces;
+      when: is_ipv4_present.stdout.splitlines()|length == 0
 
-    - name: cgroup stuff
+    - name: check control groups
+      ansible.builtin.raw: grep '^#rc_cgroup_mode' /etc/rc.conf | cat
+      register: is_cgroup_present
+      changed_when: false
+
+    - name: update cgroups
+      when: is_cgroup_present.stdout.splitlines()|length == 1
       block:
         - name: enable cgroup v2 (unified)
           ansible.builtin.raw: sed -i -e 's/^#rc_cgroup_mode=.*/rc_cgroup_mode="unified"/g' /etc/rc.conf
@@ -106,38 +142,53 @@
         - name: restart cgroups
           ansible.builtin.raw: rc-service cgroups restart
 
-    - name: update index of available package(s)
-      ansible.builtin.raw: apk update
+    - name: update system
+      when: first_run == true
+      block:
+        - name: update index of available package(s)
+          ansible.builtin.raw: apk update
 
-    - name: check package(s) update(s)
-      ansible.builtin.raw: apk version -l '<'
-      changed_when: pkgs_output.stdout.splitlines()|length > 1
-      failed_when: pkgs_output.stdout.splitlines()|length == 0
-      register: pkgs_output
+        - name: check package(s) update(s)
+          ansible.builtin.raw: apk version -l '<'
+          changed_when: pkgs_output.stdout.splitlines()|length > 1
+          failed_when: pkgs_output.stdout.splitlines()|length == 0
+          register: pkgs_output
 
-    - name: upgrading {{ pkgs_output.stdout.splitlines()|length - 1 }} package(s)
-      ansible.builtin.raw: apk upgrade
-      when: pkgs_output.stdout.splitlines()|length > 1
+        - name: upgrading {{ pkgs_output.stdout.splitlines()|length - 1 }} package(s)
+          ansible.builtin.raw: apk upgrade
+          when: pkgs_output.stdout.splitlines()|length > 1
 
-    - name: force reboot
-      ansible.builtin.raw: reboot
-      poll: 0
-      ignore_errors: yes
+        - name: force reboot
+          ansible.builtin.raw: reboot
+          poll: 0
+          ignore_errors: yes
 
-    - name: waiting for {{ inventory_hostname }} to be ready
-      wait_for:
-        host: "{{ inventory_hostname }}"
-        port: 22
-        state: started
-        delay: 5
-        timeout: 60
-      delegate_to: localhost
-      become: false
+        - name: waiting for {{ inventory_hostname }} to be ready
+          wait_for:
+            host: "{{ inventory_hostname }}"
+            port: 22
+            state: started
+            delay: 5
+            timeout: 60
+          delegate_to: localhost
+          become: false
+
+    - name: check tools presence
+      ansible.builtin.raw: grep htop /etc/apk/world | cat
+      register: tools_presence
+      changed_when: false
 
     - name: install tools
-      ansible.builtin.raw: apk add --no-cache curl htop sed
+      when: tools_presence.stdout.splitlines()|length == 0
+      ansible.builtin.raw: apk add --no-cache htop
+
+    - name: check firewall
+      ansible.builtin.raw: ls /etc/nftables.nft | cat
+      register: is_firewall_present
+      changed_when: false
 
     - name: install firewall
+      when: "'No such file or directory' in is_firewall_present.stdout"
       block:
         - name: add firewall
           ansible.builtin.raw: apk add nftables
@@ -159,123 +210,124 @@
         - name: enable firewall on boot
           ansible.builtin.raw: rc-update add nftables boot
 
-    - name: k3s - install
-      ansible.builtin.raw: >
-        export INSTALL_K3S_EXEC="server --flannel-ipv6-masq
-          --kubelet-arg=node-ip=::
-          --cluster-cidr={{ cluster_ipv4 }},{{ cluster_ipv6 }}
-          --service-cidr=10.43.0.0/16,2001:cafe:43::/112";
-        curl -sfL https://get.k3s.io | sh -
-
-    ## set k3s version
-    #   export INSTALL_K3S_VERSION="v1.29.5+k3s1";
-
-    ## sqlite server
-#        - name: k3s - install
-#          ansible.builtin.raw: curl -sfL https://get.k3s.io | sh -
-
-    ## etcd server
-#        - name: k3s - install
-#          ansible.builtin.raw: curl -sfL https://get.k3s.io | sh -s - server --cluster-init
-
-    - name: k3s - remote config
-      block:
-        - name: k3s - wait remote config to be created
-          ansible.builtin.raw: while [ ! -f /etc/rancher/k3s/k3s.yaml ]; do sleep 1; done
-
-        - name: k3s - remote config to .kube dir
-          ansible.builtin.raw: |
-            mkdir -m 0700 -p ~/.kube;
-            cp /etc/rancher/k3s/k3s.yaml $HOME/.kube/config;
-            chmod 0600 ~/.kube/config;
-
-    - name: k3s - local config
-      block:
-        - name: k3s - create local .kube dir
-          ansible.builtin.raw: mkdir -m 0700 -p ~/.kube
-          delegate_to: localhost
-
-        - name: k3s - get remote config
-          ansible.builtin.raw: scp root@{{ hostname }}:/etc/rancher/k3s/k3s.yaml ~/.kube/config
-          delegate_to: localhost
-          changed_when: false
-
-        - name: k3s - update local configuration
-          ansible.builtin.raw: |
-            sed -i -e 's/127.0.0.1/{{ hostname }}/g' ~/.kube/config;
-            sed -i -e 's/\[::1\]/{{ hostname }}/g' ~/.kube/config;
-            chmod 0600 ~/.kube/config;
-          delegate_to: localhost
-          changed_when: false
-
-    - name: k3s - wait for helm to be installed
-      ansible.builtin.raw: while [ $(kubectl get po -n kube-system | awk '/helm-install/ && /Completed/' | wc -l) != 2 ]; do sleep 1; done
-
-    - name: k3s - wait for all other pods to be ready
-      ansible.builtin.raw: while [ $(kubectl get po -n kube-system | sed -n 's/\([0-9]\+\)\/\1 \+Running//p' | wc -l) != 5 ]; do sleep 1; done
-
-    - name: traefik - disable websecure port
-      block:
-        - name: send traefik-config.yaml
-          ansible.builtin.copy:
-            src: "config-files/traefik-config.yaml"
-            dest: "/var/lib/rancher/k3s/server/manifests/traefik-config.yaml"
-            mode: 0600
-            owner: root
-            group: root
-
-        - name: apply traefik configuration
-          ansible.builtin.raw: kubectl apply -f /var/lib/rancher/k3s/server/manifests/traefik-config.yaml
-
-    - name: apply network policies
-      block:
-        - name: send network-policies
-          ansible.builtin.copy:
-            src: "./network-policies"
-            dest: "/root"
-            mode: 0700
-            owner: root
-            group: root
-
-        - name: apply block-ipv4.yaml
-          ansible.builtin.raw: kubectl apply -f /root/network-policies/block-ipv4.yaml
-
-    - name: k3s - set garbage collection limits
-      ansible.builtin.raw: scp config-files/k3s-config.yaml root@{{ hostname }}:/etc/rancher/k3s/config.yaml
-      delegate_to: localhost
+    - name: check k3s presence
+      ansible.builtin.raw: which k3s | cat
+      register: is_k3s_present
       changed_when: false
 
-    - name: k3s - restart
-      ansible.builtin.raw: rc-service k3s restart
-
-    - name: k3s - wait for metrics to be ready
-      ansible.builtin.raw: while [ $(kubectl get po -n kube-system | awk '/^metrics/' | sed -n 's/\([0-9]\+\)\/\1 \+Running//p' | wc -l) != 1 ]; do sleep 1; done
-
-    - name: remove tools
-      ansible.builtin.raw: apk del --purge curl sed
-
-    - name: process remote charts
-      delegate_to: localhost
+    - name: install k3s
+      when: is_k3s_present.stdout == ''
       block:
-        - name: discover all remote charts
-          find:
-            paths: charts/remote/
-            file_type: directory
-          register: remote_chart_list
 
-        - name: install remote charts
-          include_tasks: install-remote-chart.yml
-          loop: "{{ remote_chart_list.files | map(attribute='path') | list | sort }}"
+        - name: install required tools
+          ansible.builtin.raw: apk add --no-cache curl sed
 
-    - name: process local charts
-      delegate_to: localhost
-      block:
-        - name: discover all local charts
-          find:
-            paths: charts/local/
-            file_type: directory
-          register: local_chart_list
+        - name: k3s - install
+          ansible.builtin.raw: >
+            export INSTALL_K3S_EXEC="server --flannel-ipv6-masq
+              --kubelet-arg=node-ip=::
+              --cluster-cidr={{ cluster_ipv4 }},{{ cluster_ipv6 }}
+              --service-cidr=10.43.0.0/16,2001:cafe:43::/112";
+            curl -sfL https://get.k3s.io | sh -
 
-        - name: install local charts
-          include_tasks: install-local-chart.yml
-          loop: "{{ local_chart_list.files | map(attribute='path') | list | sort }}"
+        - name: k3s - remote config
+          block:
+            - name: k3s - wait remote config to be created
+              ansible.builtin.raw: while [ ! -f /etc/rancher/k3s/k3s.yaml ]; do sleep 1; done
+
+            - name: k3s - remote config to .kube dir
+              ansible.builtin.raw: |
+                mkdir -m 0700 -p ~/.kube;
+                cp /etc/rancher/k3s/k3s.yaml $HOME/.kube/config;
+                chmod 0600 ~/.kube/config;
+
+        - name: k3s - local config
+          block:
+            - name: k3s - create local .kube dir
+              ansible.builtin.raw: mkdir -m 0700 -p ~/.kube
+              delegate_to: localhost
+
+            - name: k3s - get remote config
+              ansible.builtin.raw: scp root@{{ hostname }}:/etc/rancher/k3s/k3s.yaml ~/.kube/config
+              delegate_to: localhost
+              changed_when: false
+
+            - name: k3s - update local configuration
+              ansible.builtin.raw: |
+                sed -i -e 's/127.0.0.1/{{ hostname }}/g' ~/.kube/config;
+                sed -i -e 's/\[::1\]/{{ hostname }}/g' ~/.kube/config;
+                chmod 0600 ~/.kube/config;
+              delegate_to: localhost
+              changed_when: false
+
+        - name: k3s - wait for helm to be installed
+          ansible.builtin.raw: while [ $(kubectl get po -n kube-system | awk '/helm-install/ && /Completed/' | wc -l) != 2 ]; do sleep 1; done
+
+        - name: k3s - wait for all other pods to be ready
+          ansible.builtin.raw: while [ $(kubectl get po -n kube-system | sed -n 's/\([0-9]\+\)\/\1 \+Running//p' | wc -l) != 5 ]; do sleep 1; done
+
+        - name: traefik - disable websecure port
+          block:
+            - name: send traefik-config.yaml
+              ansible.builtin.copy:
+                src: "config-files/traefik-config.yaml"
+                dest: "/var/lib/rancher/k3s/server/manifests/traefik-config.yaml"
+                mode: 0600
+                owner: root
+                group: root
+
+            - name: apply traefik configuration
+              ansible.builtin.raw: kubectl apply -f /var/lib/rancher/k3s/server/manifests/traefik-config.yaml
+
+        - name: apply network policies
+          block:
+            - name: send network-policies
+              ansible.builtin.copy:
+                src: "./network-policies"
+                dest: "/root"
+                mode: 0700
+                owner: root
+                group: root
+
+            - name: apply block-ipv4.yaml
+              ansible.builtin.raw: kubectl apply -f /root/network-policies/block-ipv4.yaml
+
+        - name: k3s - set garbage collection limits
+          ansible.builtin.raw: scp config-files/k3s-config.yaml root@{{ hostname }}:/etc/rancher/k3s/config.yaml
+          delegate_to: localhost
+          changed_when: false
+
+        - name: k3s - restart
+          ansible.builtin.raw: rc-service k3s restart
+
+        - name: k3s - wait for metrics to be ready
+          ansible.builtin.raw: while [ $(kubectl get po -n kube-system | awk '/^metrics/' | sed -n 's/\([0-9]\+\)\/\1 \+Running//p' | wc -l) != 1 ]; do sleep 1; done
+
+        - name: remove tools
+          ansible.builtin.raw: apk del --purge curl sed
+
+        - name: process remote charts
+          delegate_to: localhost
+          block:
+            - name: discover all remote charts
+              find:
+                paths: charts/remote/
+                file_type: directory
+              register: remote_chart_list
+
+            - name: install remote charts
+              include_tasks: install-remote-chart.yml
+              loop: "{{ remote_chart_list.files | map(attribute='path') | list | sort }}"
+
+        - name: process local charts
+          delegate_to: localhost
+          block:
+            - name: discover all local charts
+              find:
+                paths: charts/local/
+                file_type: directory
+              register: local_chart_list
+
+            - name: install local charts
+              include_tasks: install-local-chart.yml
+              loop: "{{ local_chart_list.files | map(attribute='path') | list | sort }}"
