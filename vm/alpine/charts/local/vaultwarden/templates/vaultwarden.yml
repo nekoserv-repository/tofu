@@ -35,7 +35,7 @@ spec:
         {{ if .Values.global.enableAdmin }}
         - name: ADMIN_TOKEN
           value: {{ .Values.global.adminToken }}
-        {{ end}}
+        {{ end }}
         ports:
         - containerPort: 80
           name: http
