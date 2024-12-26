@@ -307,6 +307,8 @@
         - name: remove tools
           ansible.builtin.raw: apk del --purge curl sed
 
+    - name: install helm charts
+      block:
         - name: process remote charts
           delegate_to: localhost
           block:
