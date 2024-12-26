@@ -1,0 +1,55 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Release.Name }}-restore
+  namespace: {{ .Release.Name }}
+spec:
+  schedule: "0 0 * * *"
+  suspend: true
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: {{ .Release.Name }}-restore
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: {{ .Release.Name }}-restore
+            image: nekoserv/vw-restore:latest
+            resources:
+              limits:
+                memory: "256Mi"
+                cpu: "100m"
+            env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-credentials
+                  key: access-key-id
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-credentials
+                  key: secret-access-key
+            - name: AWS_PROFILE
+              value: "{{ .Values.global.restore.profile }}"
+            - name: AWS_REGION
+              value: "{{ .Values.global.restore.region }}"
+            - name: BUCKET
+              value: "{{ .Values.global.restore.bucket }}"
+            - name: DESTINATION
+              value: "/data"
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-credentials
+                  key: zip-password
+            volumeMounts:
+            - name: data-volume
+              mountPath: /data/
+          volumes:
+            - name: data-volume
+              persistentVolumeClaim:
+                claimName: vaultwarden-pvc
