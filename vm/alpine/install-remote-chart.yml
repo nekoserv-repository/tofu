@@ -13,7 +13,7 @@
     str: "{{ hostvars[inventory_hostname][name] | to_json }}"
 
 - name: "{{ name }} - run helm"
-  ansible.builtin.raw: "helm install {{ name }} {{ url }} --create-namespace --namespace {{ namespace }} --set-json='configMap={{ str }}' --values {{ values_file }} --wait"
+  ansible.builtin.raw: "helm upgrade {{ name }} {{ url }} --create-namespace --install --namespace {{ namespace }} --set-json='configMap={{ str }}' --values {{ values_file }} --wait"
 
 - name: "{{ name }} - post-install script"
   ansible.builtin.raw: "sh -c '[ -f {{ post_install_file }} ] && sh {{ post_install_file }} || echo'"
