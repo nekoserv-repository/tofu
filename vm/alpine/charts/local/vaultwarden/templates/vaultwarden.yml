@@ -30,12 +30,14 @@ spec:
             memory: "128Mi"
             cpu: "100m"
         env:
-        - name: DOMAIN
-          value: "https://{{ .Values.global.host }}"
         {{ if .Values.global.enableAdmin }}
         - name: ADMIN_TOKEN
           value: {{ .Values.global.adminToken }}
         {{ end }}
+        - name: DOMAIN
+          value: "https://{{ .Values.global.host }}"
+        - name: TZ
+          value: {{ .Values.timezone }}
         ports:
         - containerPort: 80
           name: http

@@ -38,30 +38,32 @@ spec:
     spec:
       containers:
       - env:
-        - name: SINGLE_REGISTRY
-          value: 'true'
-        - name: REGISTRY_TITLE
-          value: Docker Registry UI
-        - name: DELETE_IMAGES
-          value: 'true'
-        - name: SHOW_CONTENT_DIGEST
-          value: 'true'
-        - name: NGINX_PROXY_PASS_URL
-          value: {{ .Values.global.nginxProxyUrl }}
-        - name: NGINX_PROXY_HEADER_Authorization
-          value: {{ .Values.global.nginxHeaderAuth }}
-        - name: SHOW_CATALOG_NB_TAGS
-          value: 'true'
+        - name: CATALOG_ELEMENTS_LIMIT
+          value: '1000'
         - name: CATALOG_MIN_BRANCHES
           value: '1'
         - name: CATALOG_MAX_BRANCHES
           value: '1'
-        - name: TAGLIST_PAGE_SIZE
-          value: '100'
+        - name: DELETE_IMAGES
+          value: 'true'
+        - name: NGINX_PROXY_HEADER_Authorization
+          value: {{ .Values.global.nginxHeaderAuth }}
+        - name: NGINX_PROXY_PASS_URL
+          value: {{ .Values.global.nginxProxyUrl }}
         - name: REGISTRY_SECURED
           value: 'false'
-        - name: CATALOG_ELEMENTS_LIMIT
-          value: '1000'
+        - name: REGISTRY_TITLE
+          value: Docker Registry UI
+        - name: SHOW_CATALOG_NB_TAGS
+          value: 'true'
+        - name: SHOW_CONTENT_DIGEST
+          value: 'true'
+        - name: SINGLE_REGISTRY
+          value: 'true'
+        - name: TAGLIST_PAGE_SIZE
+          value: '100'
+        - name: TZ
+          value: {{ .Values.timezone }}
         image: joxit/docker-registry-ui:latest
         imagePullPolicy: Always
         name: registry-ui

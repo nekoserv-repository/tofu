@@ -30,6 +30,9 @@ spec:
           requests:
             memory: "64Mi"
             cpu: "100m"
+        env:
+        - name: TZ
+          value: {{ .Values.timezone }}
         ports:
         - containerPort: 80
           name: http

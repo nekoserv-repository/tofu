@@ -11,4 +11,4 @@
   ansible.builtin.raw: "helm dependency update {{ path }}"
 
 - name: "{{ name }} - helm install"
-  ansible.builtin.raw: "helm upgrade {{ name }} {{ path }} --install --set-json 'global={{ values }}' --wait"
+  ansible.builtin.raw: "helm upgrade {{ name }} {{ path }} --install --set-json 'global={{ values }}' --set 'timezone={{ helm_timezone }}' --wait"
