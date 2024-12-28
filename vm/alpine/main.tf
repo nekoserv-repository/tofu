@@ -116,6 +116,8 @@ users:
       - ${trimspace(var.ssh_key)}
     sudo: ALL=(ALL) NOPASSWD:ALL
 
+timezone: ${var.timezone}
+
 write_files:
   - path: /etc/sudoers.d/cloud-init
     content: |

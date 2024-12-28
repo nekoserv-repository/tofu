@@ -52,3 +52,5 @@ variable "private_key_path" {
 }
 variable "ssh_key" {
 }
+variable "timezone" {
+}

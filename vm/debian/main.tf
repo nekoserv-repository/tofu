@@ -104,6 +104,7 @@ users:
    ssh-authorized-keys:
      - ${trimspace(var.ssh_key)}
 disable_root: false
+timezone: ${var.timezone}
 EOF
     file_name = "cloud-config-debian-0${count.index+1}.yaml"
   }
