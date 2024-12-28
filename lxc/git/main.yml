@@ -61,6 +61,13 @@
       delegate_to: localhost
       when: lsof_output.stdout.splitlines()|length > 0
 
+    - name: set timezone
+      block:
+        - name: install tzdata
+          ansible.builtin.raw: apk add tzdata
+
+        - name: timezone symlink
+          ansible.builtin.raw: ln -s /usr/share/zoneinfo/{{ timezone }} /etc/localtime
 
     - name: install stuff
       block:
