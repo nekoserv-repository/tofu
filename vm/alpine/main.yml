@@ -268,7 +268,6 @@
 
         - name: traefik - disable websecure port
           block:
-
             - name: generate traefik-config.yaml
               ansible.builtin.template:
                 src: "config-files/traefik-config.yaml.j2"
@@ -297,6 +296,14 @@
           ansible.builtin.raw: scp config-files/k3s-config.yaml root@{{ hostname }}:/etc/rancher/k3s/config.yaml
           delegate_to: localhost
           changed_when: false
+
+        - name: k3s - generate private registry configuration
+          ansible.builtin.template:
+            src: "config-files/registries.yaml.j2"
+            dest: "/etc/rancher/k3s/registries.yaml"
+            mode: 0600
+            owner: root
+            group: root
 
         - name: k3s - restart
           ansible.builtin.raw: rc-service k3s restart
