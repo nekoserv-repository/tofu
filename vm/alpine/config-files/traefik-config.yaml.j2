@@ -12,12 +12,15 @@ spec:
 
     # use port 80
     ports:
+      # enable web on port 80
       web:
         exposedPort: 80
         # trust X-Forwarded-* from the ip ranges
         forwardedHeaders:
           trustedIPs:
             - {{ fh_ip_range }}
+      # disable websecure port for LoadBalander
+      websecure:
 
     # preserves the client source IP and avoids a second hop for LoadBalancer and NodePort type Services, but risks potentially imbalanced traffic spreading.
     service:
