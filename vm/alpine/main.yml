@@ -122,6 +122,9 @@
         echo "    gateway {{ host_ipv4_gw }}" >> /etc/network/interfaces;
       when: is_ipv4_present.stdout.splitlines()|length == 0
 
+    - name: remove dhcpcd package
+      ansible.builtin.raw: apk del --purge dhcpcd
+
     - name: check control groups
       ansible.builtin.raw: grep '^#rc_cgroup_mode' /etc/rc.conf | cat
       register: is_cgroup_present
