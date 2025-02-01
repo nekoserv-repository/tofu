@@ -45,7 +45,7 @@ http:
     main-svc:
       loadBalancer:
         servers:
-          - url: "{{ traefik_host_ntfy }}"
+          - url: "{{ traefik_host }}"
 
 ## https mode : let's encrypt
 certificatesResolvers:

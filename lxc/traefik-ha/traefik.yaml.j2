@@ -45,7 +45,7 @@ http:
     ha-svc:
       loadBalancer:
         servers:
-          - url: "{{ traefik_host_ha }}"
+          - url: "{{ traefik_host }}"
 
 ## https mode : let's encrypt
 certificatesResolvers:
