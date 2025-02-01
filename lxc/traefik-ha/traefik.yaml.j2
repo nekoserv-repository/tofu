@@ -56,3 +56,9 @@ certificatesResolvers:
       dnsChallenge:
         provider: {{ traefik_dns_provider }}
         delayBeforeCheck: 10
+
+## strict SNI checking
+tls:
+  options:
+    default:
+      sniStrict: true
