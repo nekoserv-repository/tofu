@@ -21,12 +21,28 @@ table ip filter {
 }
 
 table ip6 filter {
+	# censys.io : AS398722, AS398705, AS398324
+        set blacklist_ipv6 {
+		type ipv6_addr
+		flags interval
+		auto-merge
+		elements = {
+			2620:96:e000::/48,
+			2602:80d:1000::/48,
+			2602:80d:1003::/48,
+			2602:80d:1004::/48,
+			2602:80d:1002::/48,
+			2602:80d:1005::/48,
+			2602:80d:1006::/48,
+		}
+	}
 	chain input {
 		type filter hook input priority 0; policy drop;
 		ct state invalid drop;
 		ct state { established, related } accept;
 		iif lo accept;
 		iif != lo ip6 daddr ::1/128 drop;
+		iif $iface ip6 saddr @blacklist_ipv6 drop;
 		iif $iface ip6 nexthdr icmpv6 icmpv6 type { nd-neighbor-solicit, nd-router-advert, nd-neighbor-advert } accept;
 		iif $iface meta l4proto {tcp, udp} th dport $port accept;
 	}
