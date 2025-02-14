@@ -65,12 +65,6 @@
           delegate_to: localhost
           when: lsof_output.stdout.splitlines()|length > 0
 
-    - name: global
-      block:
-        - name: disable router advertisements
-          #ansible.builtin.raw: echo "        pre-up echo 0 > /proc/sys/net/ipv6/conf/eth0/accept_ra" >> /etc/network/interfaces
-          ansible.builtin.raw: echo -ne "net.ipv6.conf.all.accept_ra=0\nnet.ipv6.conf.default.accept_ra=0\n" > /etc/sysctl.d/local.conf
-
     - name: clean
       block:
         - name: remove files
