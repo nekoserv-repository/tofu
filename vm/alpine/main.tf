@@ -47,6 +47,7 @@ resource "proxmox_virtual_environment_vm" "vm" {
 
   cpu {
     cores = var.cores
+    type  = var.cpu_type
   }
 
   memory {

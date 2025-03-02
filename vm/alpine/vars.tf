@@ -13,6 +13,9 @@ variable "proxmox_node" {
 variable "cores" {
    default = "3"
 }
+variable "cpu_type" {
+   default = "x86-64-v2-AES"
+}
 variable "memory" {
    default = "4096"
 }
