@@ -1,2 +1,0 @@
-url: "https://github.com/tektoncd/operator/releases/download/tekton-operator-0.74.0/tekton-operator-0.74.0.tgz"
-namespace: "tekton-operator"
