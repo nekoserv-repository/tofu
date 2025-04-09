@@ -1,0 +1,52 @@
+# include proxy host and status map
+include /etc/nginx/http.d/proxy.map;
+include /etc/nginx/http.d/status.map;
+
+server {
+	http2				on;
+	http3				on;
+
+	listen				[::]:443 quic reuseport;
+	listen				[::]:443 ssl;
+	server_name			.{{ lego_domain }};
+
+	ssl_certificate			/etc/nginx/ssl/server.crt;
+	ssl_certificate_key		/etc/nginx/ssl/server.key;
+
+	# proxy using map
+	location / {
+                # advertise http3
+                add_header Alt-Svc 'h3=":443"; ma=86400';
+
+		# permit upload up to 2m
+		client_max_body_size	2m;
+
+                # proxy settings
+		proxy_buffering		off;
+		proxy_pass		http://$map_backend;
+
+		# proxy headers
+		proxy_set_header	Host		$host;
+		proxy_set_header	Upgrade		$http_upgrade;
+		proxy_set_header	Connection	$connection_upgrade;
+		proxy_set_header	X-Forwarded-For	$proxy_add_x_forwarded_for;
+		proxy_set_header	X-Real-IP	$remote_addr;
+
+		# proxy timeouts
+		proxy_connect_timeout	5;
+		proxy_read_timeout	15;
+		proxy_send_timeout	10;
+	}
+
+
+	# refuse non existing domains
+	if ($map_backend = '') {
+		return 444;
+	}
+
+	# custom errors (hide nginx)
+	error_page 400 401 402 403 404 405 406 407 408 409 410 411 412 413 414 415 416 417 418 421 422 423 424 425 426 428 429 431 451 494 495 496 497 500 501 502 503 504 505 506 507 508 510 511 @custom_error;
+	location @custom_error {
+		return 500 'error $status : $status_text';
+	}
+}

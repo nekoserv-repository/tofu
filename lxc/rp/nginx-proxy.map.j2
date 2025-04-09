@@ -1,0 +1,8 @@
+map $host $map_backend {
+{{ nginx_proxy_map }}
+}
+
+map $http_upgrade $map_http_upgrade {
+	default			upgrade;
+	''			close;
+}

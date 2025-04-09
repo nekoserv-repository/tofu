@@ -1,0 +1,14 @@
+#!/bin/sh
+
+## renew let's encrypt certificate
+{{ lego_dns_vars }}
+lego -s "https://{{ lego_server }}/directory" -m "{{ lego_email }}" --dns {{ lego_dns_provider }} -d "*.{{ lego_domain  }}" run
+
+## copy certificates
+cp ~/.lego/certificates/*.key /etc/nginx/ssl/server.key
+cat ~/.lego/certificates/*.crt > /etc/nginx/ssl/server.crt
+chown -R root:root /etc/nginx/ssl/
+chmod 0400 /etc/nginx/ssl/*
+
+## reload nginx configuration
+pgrep nginx && nginx -s reload || echo
