@@ -84,7 +84,7 @@
         ansible.builtin.raw: apk add git-daemon
 
       - name: install uwsgi and plugins
-        ansible.builtin.raw: apk add uwsgi uwsgi-cgi uwsgi-router_rewrite
+        ansible.builtin.raw: apk add uwsgi uwsgi-cgi
 
       - name: install highlight
         ansible.builtin.raw: apk add highlight

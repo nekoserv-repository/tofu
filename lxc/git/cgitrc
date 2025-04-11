@@ -10,13 +10,13 @@ enable-log-linecount=1
 source-filter=/usr/lib/cgit/filters/highlighting.sh
 
 # html
-virtual-root=/cgit/
-css=/cgit/cgit.css
-favicon=/cgit/favicon.ico
-logo=/cgit/cgit.png
+virtual-root=/
+css=/cgit.css
+favicon=/favicon.ico
+logo=/cgit.png
 
 # repo settings
-clone-url=https://$HTTP_HOST/cgit/$CGIT_REPO_URL git+ssh://git@ANSIBLE_HOST/$CGIT_REPO_URL
+clone-url=https://$HTTP_HOST/$CGIT_REPO_URL git+ssh://git@ANSIBLE_HOST/$CGIT_REPO_URL
 readme=main:README.md
 
 # auto scan
